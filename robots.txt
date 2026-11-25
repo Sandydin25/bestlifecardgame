@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /stats.html
+Disallow: /build/
+
+Sitemap: https://bestlifecards.com/sitemap.xml

@@ -187,7 +187,7 @@ function renderWaiting() {
   lobby(`<h3>Your join code</h3>
     <div class="o-bigcode" aria-label="Join code ${R.code.split('').join(' ')}">${R.code}</div>
     <button class="btn btn-ghost o-share" type="button" data-act="share">Send the invite</button>
-    <p class="o-tip">Family can open <b>bestlifecardgame.us</b>, tap <b>Join with a code</b>, and type <b>${R.code}</b>.</p>
+    <p class="o-tip">Family can open <b>bestlifecards.com</b>, tap <b>Join with a code</b>, and type <b>${R.code}</b>.</p>
     <ul class="o-players">${list}</ul>
     ${startBtn}
     <button class="o-link" type="button" data-act="leave">${R.isHost ? 'Close this game' : 'Leave'}</button>`, true);

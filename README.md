@@ -1,7 +1,7 @@
 # Best Life
 
 The website for **Best Life**, the card game about life created by Sandy Kraemer.
-Live at https://bestlifecardgame.us
+Live at https://bestlifecards.com (bestlifecardgame.us forwards there)
 
 A plain static site (HTML, CSS and JavaScript). GitHub Pages serves this folder as is.
 

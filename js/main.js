@@ -25,19 +25,30 @@
   addEventListener('scroll', onScrollNav, { passive: true });
   onScrollNav();
 
-  // On Guard: the red and blue arrows sweep across the screen, then Sandy's tilting game opens
+  // Best Life / On Guard switch: the pill slides over (turning red and blue), the arrows sweep the screen, On Guard opens
+  const sw = $('#gameSwitch'), swPill = sw.querySelector('.gs-pill'), swBL = sw.querySelector('.gs-bl'), swOG = sw.querySelector('.gs-og');
+  if (swOG && !swOG.hidden) sw.classList.add('has-og');
+  const placePill = (tab) => { swPill.style.setProperty('--x', tab.offsetLeft + 'px'); swPill.style.setProperty('--w', tab.offsetWidth + 'px'); };
+  const settlePill = () => { if (sw.classList.contains('has-og') && !sw.classList.contains('go')) placePill(swBL); };
+  settlePill();
+  document.fonts && document.fonts.ready.then(settlePill);
+  addEventListener('resize', settlePill);
   const goOnGuard = (e) => {
     const a = e.target.closest('a[href="onguard/"]');
     if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
-    const w = BL.el('div', 'og-wipe', '<i class="r"><b>ON</b></i><i class="b"><b>GUARD</b></i>');
-    w.setAttribute('aria-hidden', 'true');
-    document.body.append(w);
+    const fromSwitch = sw.contains(a) && sw.classList.contains('has-og');
+    if (fromSwitch) { sw.classList.add('go'); placePill(swOG); }
     try { sessionStorage.setItem('og-from', 'bestlife'); } catch (err) {}
-    setTimeout(() => { location.href = a.href; }, 640);
+    setTimeout(() => {
+      const w = BL.el('div', 'og-wipe', '<i class="r"><b>ON</b></i><i class="b"><b>GUARD</b></i>');
+      w.setAttribute('aria-hidden', 'true');
+      document.body.append(w);
+      setTimeout(() => { location.href = a.href; }, 640);
+    }, fromSwitch ? 420 : 0);
   };
   document.addEventListener('click', goOnGuard);
-  addEventListener('pageshow', (e) => { if (e.persisted) document.querySelectorAll('.og-wipe').forEach((w) => w.remove()); });
+  addEventListener('pageshow', (e) => { if (e.persisted) { document.querySelectorAll('.og-wipe').forEach((w) => w.remove()); sw.classList.remove('go'); settlePill(); } });
 
   // phones: a Menu button opens a sheet with every section
   const navBtn = $('#navMenu'), sheet = $('#navSheet');

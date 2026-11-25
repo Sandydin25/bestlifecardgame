@@ -949,9 +949,7 @@ html.fs-lock, html.fs-lock body { overflow: hidden; }
 }
 
 /* ---------- On Guard button (Sandy's tilting game) ---------- */
-.og-badge { order: 0; position: relative; display: inline-flex; align-items: center; height: 36px; margin-right: auto; text-decoration: none; filter: drop-shadow(0 3px 0 rgba(0,0,0,.28)); -webkit-tap-highlight-color: transparent; }
-.nav-logo { margin-right: 14px; }
-.nav-logo:has(+ .og-badge[hidden]) { margin-right: auto; }
+.og-badge { position: relative; display: inline-flex; align-items: center; height: 36px; text-decoration: none; filter: drop-shadow(0 3px 0 rgba(0,0,0,.28)); -webkit-tap-highlight-color: transparent; }
 .og-badge > span { display: grid; place-items: center; height: 100%; color: #fff; font: 400 19px/1 var(--display); letter-spacing: .02em; transition: transform .45s cubic-bezier(.3,1.5,.5,1); }
 .og-badge b { display: block; font-weight: 400; transform: skewX(-9deg); }
 .og-on { width: 50px; padding-right: 9px; background: #e8392b; clip-path: polygon(0 0, 74% 0, 100% 50%, 74% 100%, 0 100%); border-radius: 4px 0 0 4px; }
@@ -966,8 +964,6 @@ html.fs-lock, html.fs-lock body { overflow: hidden; }
 .og-badge:focus-visible { outline-offset: 4px; }
 @keyframes og-nudge { 0%, 86%, 100% { transform: none; } 90% { transform: translateX(5px); } 94% { transform: translateX(-1px); } }
 @keyframes og-nudge2 { 0%, 86%, 100% { transform: none; } 90% { transform: translateX(-5px); } 94% { transform: translateX(1px); } }
-.og-badge:not(:hover) .og-on { animation: og-nudge 7s 2s infinite; }
-.og-badge:not(:hover) .og-guard { animation: og-nudge2 7s 2s infinite; }
 .og-badge.mini { height: 24px; margin: 0 8px 0 0; vertical-align: -6px; filter: none; }
 .og-badge.mini > span { font-size: 13px; animation: none !important; }
 .og-badge.mini .og-on { width: 34px; padding-right: 6px; }
@@ -975,17 +971,11 @@ html.fs-lock, html.fs-lock body { overflow: hidden; }
 .sheet-og { display: flex !important; align-items: center; }
 .cta-short { display: none; }
 @media (max-width: 480px) {
-  .nav-logo { font-size: 22px; margin-right: 8px; }
-  .og-badge { height: 32px; }
-  .og-badge > span { font-size: 16px; }
-  .og-on { width: 42px; padding-right: 7px; }
-  .og-guard { width: 68px; margin-left: -7px; padding-left: 11px; }
   .nav-menu { padding: 10px 12px; }
   .nav-menu .nm-label { display: none; }
   .cta-long { display: none; }
   .cta-short { display: inline; }
 }
-@media (max-width: 350px) { .og-badge { display: none; } }
 /* the click: red and blue arrows sweep across the screen, then On Guard opens */
 .og-wipe { position: fixed; inset: 0; z-index: 1000; pointer-events: none; overflow: hidden; }
 .og-wipe i { position: absolute; left: 0; width: 100%; height: 50.5%; display: grid; place-items: center; font: 400 clamp(64px, 16vw, 180px)/1 var(--display); color: #fff; font-style: normal; }
@@ -995,3 +985,43 @@ html.fs-lock, html.fs-lock body { overflow: hidden; }
 @keyframes og-in-l { from { transform: translateX(-105%); } }
 @keyframes og-in-r { from { transform: translateX(105%); } }
 @media (prefers-reduced-motion: reduce) { .og-badge > span { animation: none !important; } }
+
+/* ---------- Best Life / On Guard tab switch (left of the nav) ---------- */
+.game-switch { order: 0; position: relative; display: inline-flex; align-items: center; margin-right: auto; border-radius: 999px; isolation: isolate; -webkit-tap-highlight-color: transparent; }
+.game-switch .gs-tab { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: .2em; text-decoration: none; white-space: nowrap; }
+.game-switch .gs-pill { display: none; }
+/* with On Guard switched on: a dark track, two tabs and a sliding pill */
+.game-switch.has-og { padding: 4px; background: rgba(22, 22, 74, .92); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); box-shadow: inset 0 0 0 1px rgba(255,255,255,.14), 0 6px 18px rgba(0,0,0,.25); }
+.has-og .gs-tab { height: 36px; padding: 0 15px; border-radius: 999px; font: 400 21px/1 var(--display); letter-spacing: .02em; transform: none; text-shadow: none; transition: color .35s ease, transform .35s cubic-bezier(.3,1.6,.5,1); }
+.has-og .gs-bl { margin-right: 0; color: var(--yellow); }
+.has-og .gs-bl[aria-current] { color: var(--ink); }
+.has-og .gs-og b { display: inline-block; font-weight: 400; transform: skewX(-9deg); transition: color .35s ease, transform .35s cubic-bezier(.3,1.6,.5,1); }
+.has-og .gs-og .o1 { color: #ff6b5c; }
+.has-og .gs-og .o2 { color: #5cb6f6; }
+.has-og .gs-pill {
+  display: block; position: absolute; z-index: 0; left: 0; top: 4px; bottom: 4px; width: var(--w, 120px); border-radius: 999px;
+  transform: translateX(var(--x, 4px)); background: var(--yellow); box-shadow: 0 3px 0 #c9a800, 0 8px 18px rgba(0,0,0,.25);
+  transition: transform .62s cubic-bezier(.68,-0.35,.27,1.35), width .62s cubic-bezier(.68,-0.35,.27,1.35), box-shadow .4s;
+}
+.has-og .gs-pill::before { /* On Guard colours fade in as the pill arrives */
+  content: ''; position: absolute; inset: 0; border-radius: inherit; opacity: 0; transition: opacity .16s .34s;
+  background: linear-gradient(100deg, #e8392b 0 40%, #2a8fd8 40.5% 100%);
+}
+@media (hover: hover) {
+  .has-og:not(.go) .gs-og:hover b { transform: skewX(-9deg) translateY(-2px); }
+  .has-og:not(.go) .gs-og:hover .o1 { transform: skewX(-9deg) translate(-2px, -2px); }
+  .has-og:not(.go) .gs-og:hover .o2 { transform: skewX(-9deg) translate(2px, -2px); }
+  .has-og:not(.go):has(.gs-og:hover) .gs-pill { transform: translateX(calc(var(--x, 4px) + 7px)); }
+}
+.has-og.go .gs-pill { box-shadow: 0 3px 0 rgba(0,0,0,.35), 0 8px 22px rgba(232,57,43,.35); }
+.has-og.go .gs-pill::before { opacity: 1; }
+.has-og.go .gs-bl { color: var(--yellow); transition-delay: .18s; }
+.has-og.go .gs-og b { color: #fff; }
+.has-og.go .gs-og .o1 { transform: skewX(-9deg) translateX(-3px); }
+.has-og.go .gs-og .o2 { transform: skewX(-9deg) translateX(3px); }
+@media (max-width: 480px) {
+  .has-og .gs-tab { height: 32px; padding: 0 11px; font-size: 17px; }
+  .game-switch.has-og { padding: 3px; }
+  .has-og .gs-pill { top: 3px; bottom: 3px; }
+}
+@media (max-width: 359px) { .has-og .gs-tab { padding: 0 8px; font-size: 15px; } }

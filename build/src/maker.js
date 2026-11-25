@@ -30,6 +30,6 @@ BL.paintPoster = async (s) => {
   ctx.fillText('MY BEST LIFE CARD', W / 2, 1218);
   ctx.fillStyle = 'rgba(255,255,255,.78)';
   ctx.font = '700 30px Archivo';
-  ctx.fillText('Make yours at bestlifecardgame.us', W / 2, 1278);
+  ctx.fillText('Make yours at bestlifecards.com', W / 2, 1278);
   return c;
 };

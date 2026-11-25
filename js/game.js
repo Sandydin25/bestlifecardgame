@@ -628,7 +628,7 @@
   }
   $('#createBtn').addEventListener('click', () => openOnline('create'));
   $('#joinBtn').addEventListener('click', () => openOnline('join'));
-  // invite links: bestlifecardgame.us/?join=ABCD
+  // invite links: bestlifecards.com/?join=ABCD
   const joinCode = (new URLSearchParams(location.search).get('join') || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
   if (joinCode.length === 4) {
     document.getElementById('play').scrollIntoView({ behavior: 'auto' });

@@ -1,10 +1,10 @@
 /* Anonymous counters (no personal data): visits and games played. Stored in Firebase at /stats.
-   Uses the REST API so it costs no extra download. View them at bestlifecardgame.us/stats.html */
+   Uses the REST API so it costs no extra download. View them at bestlifecards.com/stats.html */
 (function () {
   'use strict';
   const BL = (window.BL = window.BL || {});
   // only count real visits to the live site (not local testing or automated browsers)
-  const test = !/^(www\.)?bestlifecardgame\.us$/.test(location.hostname) || /[?&]fast\b/.test(location.search) || navigator.webdriver;
+  const test = !/^(www\.)?(bestlifecards\.com|bestlifecardgame\.us)$/.test(location.hostname) || /[?&]fast\b/.test(location.search) || navigator.webdriver;
   BL.stats = {
     hit(key) {
       const c = window.BL_FIREBASE;

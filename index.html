@@ -10,13 +10,23 @@
   <meta property="og:description" content="The new fun game about life by Sandy Kraemer. 52 cards · 12 sets · Ask to win!">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Best Life">
-  <meta property="og:url" content="https://bestlifecardgame.us/">
-  <meta property="og:image" content="https://bestlifecardgame.us/img/share.jpg">
+  <meta property="og:url" content="https://bestlifecards.com/">
+  <meta property="og:image" content="https://bestlifecards.com/img/share.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="The Best Life card game box with its twelve card sets fanned out">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:image" content="https://bestlifecardgame.us/img/share.jpg">
+  <meta name="twitter:image" content="https://bestlifecards.com/img/share.jpg">
+  <link rel="canonical" href="https://bestlifecards.com/">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@graph":[
+    {"@type":"WebSite","name":"Best Life","url":"https://bestlifecards.com/","inLanguage":"en"},
+    {"@type":"Game","name":"Best Life","url":"https://bestlifecards.com/","image":"https://bestlifecards.com/img/share.jpg",
+     "description":"A Go Fish–style card game about life: 52 cards, 12 sets and 48 Connecting Points of wit and wisdom. Play online with family.",
+     "author":{"@type":"Person","name":"Sandy F. Kraemer"},"numberOfPlayers":{"@type":"QuantitativeValue","minValue":2,"maxValue":6},
+     "audience":{"@type":"PeopleAudience","suggestedMinAge":7},"copyrightHolder":{"@type":"Organization","name":"SFK and Associates LLC"}}
+  ]}
+  </script>
   <link rel="apple-touch-icon" href="img/icon-180.png">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%233b3d92'/%3E%3Ctext x='50' y='72' font-family='Impact,Arial Narrow,sans-serif' font-size='62' text-anchor='middle' fill='%23ffe31a'%3EBL%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="fonts.css">
@@ -25,8 +35,11 @@
 <body>
 
 <header class="nav" id="nav">
-  <a class="nav-logo" href="#top" aria-label="Best Life — back to top">BEST LIFE</a>
-  <a class="og-badge" id="ogBadge" hidden href="onguard/" aria-label="On Guard: play Sandy’s tilting marble game"><span class="og-on"><b>ON</b></span><span class="og-guard"><b>GUARD</b></span></a>
+  <nav class="game-switch" id="gameSwitch" aria-label="Sandy’s games">
+    <i class="gs-pill" aria-hidden="true"></i>
+    <a class="gs-tab gs-bl nav-logo" href="#top" aria-current="page" aria-label="Best Life — back to top">BEST LIFE</a>
+    <a class="gs-tab gs-og" href="onguard/" hidden aria-label="On Guard: play Sandy’s tilting marble game"><b class="o1">ON</b><b class="o2">GUARD</b></a>
+  </nav>
   <nav class="nav-links" aria-label="Sections">
     <a href="#sets">The Sets</a>
     <a href="#wisdom">Wit &amp; Wisdom</a>
