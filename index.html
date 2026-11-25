@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Best Life — The New Fun Game About Life by Sandy Kraemer</title>
+  <meta name="description" content="Go for your Best Life! A fun card game about life by Sandy Kraemer: 52 cards, 12 sets, 48 Connecting Points of wit and wisdom. Ask to win!">
+  <meta name="theme-color" content="#23246a">
+  <meta property="og:title" content="Go for your Best Life">
+  <meta property="og:description" content="The new fun game about life by Sandy Kraemer. 52 cards · 12 sets · Ask to win!">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%233b3d92'/%3E%3Ctext x='50' y='72' font-family='Impact,Arial Narrow,sans-serif' font-size='62' text-anchor='middle' fill='%23ffe31a'%3EBL%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="fonts.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="nav" id="nav">
+  <a class="nav-logo" href="#top" aria-label="Best Life — back to top">BEST LIFE</a>
+  <nav class="nav-links" aria-label="Sections">
+    <a href="#sets">The Sets</a>
+    <a href="#wisdom">Wit &amp; Wisdom</a>
+    <a href="#how">How to Play</a>
+    <a href="#play" class="cta">Play a Round</a>
+  </nav>
+</header>
+
+<main id="top">
+  <!-- ============================ HERO ============================ -->
+  <section class="hero" id="hero" aria-label="Best Life — the box">
+    <div class="hero-pin">
+      <div class="hero-bg"></div>
+      <div class="stage" id="stage"></div>
+
+      <div class="cap cap-intro" data-cap="intro">
+        <div class="kicker">A New Fun Game About Life</div>
+        <h1 class="display"><span class="go yl">Go for your</span><span class="bl yl">Best Life</span></h1>
+        <p>The card game created by <b>Sandy Kraemer</b>. Twelve sets of life’s best stuff, a little wit &amp; wisdom on every card, and one simple way to win: <b>just ask.</b></p>
+        <div class="by"><img class="medal" src="" data-icon="medal" alt=""><div><small>Created by</small><span class="sig">Sandy Kraemer</span></div></div>
+      </div>
+
+      <div class="cap cap-fact" data-cap="f52">
+        <span class="num">52</span>
+        <h2>Different. Interesting. Fun.</h2>
+        <p>One Gold Edition deck: 48 Best Life cards plus 4 Action cards.</p>
+      </div>
+      <div class="cap cap-fact" data-cap="f12">
+        <span class="num">12</span>
+        <h2>Sets of four</h2>
+        <p>Collect all four cards of a set to win it.</p>
+        <div class="chips" id="setChips"></div>
+      </div>
+      <div class="cap cap-fact" data-cap="f48">
+        <span class="num">48</span>
+        <h2>Connecting Points</h2>
+        <p>Every card carries its own bit of wit &amp; wisdom. <i>“Read Connecting Points only for wit and wisdom.”</i></p>
+      </div>
+      <div class="cap cap-open" data-cap="open">
+        <div class="display yl">Let’s open it up…</div>
+        <p>Keep scrolling</p>
+      </div>
+      <div class="cap cap-end" data-cap="end">
+        <div class="ce-l"><div class="display yl">Twelve sets. <br>One Best Life.</div><p>Collect all four of a set to win it.</p></div>
+        <div class="ce-r">
+          <div class="row">
+            <a class="btn btn-y" href="#sets">Meet the cards</a>
+            <a class="btn btn-ghost" href="#play">Play a round →</a>
+          </div>
+          <div class="hero-hint" id="heroHint">Psst: hover a card to pull it from the fan</div>
+        </div>
+      </div>
+      <div class="scroll-cue" id="scrollCue"><i></i>Scroll to open</div>
+    </div>
+  </section>
+
+  <!-- ============================ SETS ============================ -->
+  <section class="sec sets" id="sets">
+    <div class="sec-head reveal">
+      <div class="kicker">The Cards</div>
+      <h2 class="display">Twelve sets of <em>life’s best</em> stuff</h2>
+      <p>From Money and Food to Family and Friends: each set has four cards, and each card carries its own Connecting Point. Tap a card to flip it over.</p>
+    </div>
+    <div class="grid-tools reveal">
+      <button class="btn btn-ink" id="shuffleBtn" type="button">Shuffle</button>
+      <button class="btn btn-ink" id="flipAllBtn" type="button">Flip all</button>
+    </div>
+    <div class="set-grid" id="setGrid"></div>
+    <p class="grid-note">Tap any card to flip it &middot; one Connecting Point shown per set (each set has four)</p>
+  </section>
+
+  <!-- ============================ WISDOM ============================ -->
+  <section class="sec wisdom" id="wisdom">
+    <div class="sec-head reveal">
+      <div class="kicker">Connecting Points</div>
+      <h2 class="display yl">A little wit &amp; wisdom</h2>
+      <p>Every card has a saying on it. The rules put it best: <i>“Read Connecting Points only for wit and wisdom.”</i> Draw one below.</p>
+    </div>
+    <div class="wis reveal">
+      <div class="wis-table">
+        <button class="wis-deck" id="wisDeck" type="button" aria-label="Draw a card from the deck"><div class="stack-shadow"></div></button>
+        <div class="wis-drawn" id="wisDrawn"></div>
+      </div>
+      <div class="wis-quote" aria-live="polite">
+        <div class="set-tag" id="wisTag"><img src="" alt="" id="wisTagImg"><span id="wisTagName">THE DECK</span></div>
+        <blockquote id="wisQuote"><span class="w">Tap</span> <span class="w">the</span> <span class="w">deck</span> <span class="w">to</span> <span class="w">draw</span> <span class="w">a</span> <span class="w">Connecting</span> <span class="w">Point.</span></blockquote>
+        <p class="src" id="wisSrc">A little wisdom from the sets.</p>
+        <button class="btn btn-y" id="wisBtn" type="button">Draw a card</button>
+        <div class="wis-count" id="wisCount"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ HOW TO PLAY ============================ -->
+  <section class="sec how" id="how">
+    <div class="sec-head reveal">
+      <div class="kicker">How to Play</div>
+      <h2 class="display">Ask to win!</h2>
+      <p>2 to 6 players, ages 7 to 107. If you’ve ever played Go Fish, you already know the feeling. Here’s how it goes, straight from the rules card.</p>
+    </div>
+    <div class="how-wrap">
+      <div class="how-steps" id="howSteps">
+        <article class="step" data-scene="0">
+          <div class="no">1</div>
+          <h3>The cards</h3>
+          <div class="rule"><b>52 cards</b> includes <b>12 sets of 4 BEST LIFE CARDS</b> such as 4 <b>MONEY</b> or 4 <b>FOOD</b> (each card with a different Connecting Point) plus <b>4 ACTION CARDS</b>. Read Connecting Points only for wit and wisdom.</div>
+          <p class="plain">12 sets × 4 cards + 4 Action cards = 52.</p>
+        </article>
+        <article class="step" data-scene="1">
+          <div class="no">2</div>
+          <h3>Object of the game</h3>
+          <div class="rule">Win the most sets of <b>BEST LIFE CARDS</b>, such as 4 <b>MONEY</b> or 4 <b>FOOD CARDS</b>.</div>
+          <p class="plain">Get all four of a kind and the set is yours.</p>
+        </article>
+        <article class="step" data-scene="2">
+          <div class="no">3</div>
+          <h3>The deal</h3>
+          <div class="rule">Any player can be dealer. Dealer shuffles all cards. Dealer then deals <b>7 cards</b> face down to each player if 2–4 players, <b>5 cards</b> each for 5–6 players. Remaining deck is put face down to make the <b>Help Stack</b>. Organize cards in hand.</div>
+          <p class="plain">Pick a number of players and watch the deal.</p>
+        </article>
+        <article class="step" data-scene="3">
+          <div class="no">4</div>
+          <h3>Play</h3>
+          <div class="rule">Player to dealer’s left <b>looks directly at any player</b> and asks that player for help collecting <b>BEST LIFE CARDS</b> of a specific set by saying <span class="say">“Help me with…”</span>. For example <b>“Help me with MONEY”</b>.</div>
+          <p class="plain">Eye contact is part of the game!</p>
+        </article>
+      </div>
+      <div class="how-visual">
+        <div class="how-sticky">
+          <div class="scene-wrap" id="sceneWrap">
+            <div class="scene on" data-scene="0"><div class="anat" id="anat"></div><div class="scene-cap"><b>12</b> sets × <b>4</b> + <b>4</b> Action = <b>52</b> cards</div></div>
+            <div class="scene" data-scene="1"><div class="obj" id="obj"><div class="tally" id="tally"></div><div class="stamp">SET!</div></div><div class="scene-cap">Collect all <b>4 MONEY</b> cards and you win the set</div></div>
+            <div class="scene" data-scene="2"><div class="deal" id="deal"></div></div>
+            <div class="scene" data-scene="3"><div class="ask" id="ask"></div><div class="scene-cap" id="askCap">Look right at them and say it!</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ PLAY ============================ -->
+  <section class="sec play" id="play">
+    <div class="sec-head reveal">
+      <div class="kicker">Play a Round</div>
+      <h2 class="display yl">Help me with…</h2>
+      <p>A quick two-player round against Smiley. Ask for a set you’re holding. If Smiley has any, they hand them over. If not, it’s off to the Help Stack.</p>
+      <p class="note">A simplified, Go Fish–style taste of the game: 48 Best Life cards, no Action cards. The full rules come in the box!</p>
+    </div>
+    <div class="board" id="board">
+      <div class="seat them">
+        <div class="who-tag" id="tagThem"><div class="av"><img src="" data-icon="grin" alt=""></div><div><b>Smiley</b><small id="themInfo">7 cards</small></div></div>
+        <div class="hand theirs" id="handThem"></div>
+      </div>
+      <div class="mid">
+        <div class="pile-wrap" id="pileWrap">
+          <div class="pile" id="pile"></div>
+          <div class="pile-lbl"><b id="pileCount">34</b>Help Stack</div>
+        </div>
+        <div class="msg" id="msg" aria-live="polite">Pick a set to ask for.</div>
+        <div class="side-col r">
+          <span class="t">Smiley’s sets</span><div class="sets-won" id="setsThem"></div>
+          <span class="t" style="margin-top:10px">Your sets</span><div class="sets-won" id="setsYou"></div>
+        </div>
+      </div>
+      <div class="seat you">
+        <div class="who-tag" id="tagYou"><div class="av"><img src="" data-icon="hugface" alt=""></div><div><b>You</b><small id="youInfo">7 cards</small></div></div>
+        <div class="ask-bar" id="askBar"></div>
+        <div class="hand mine" id="handYou"></div>
+      </div>
+      <div class="end-screen start-screen on" id="startScreen">
+        <div>
+          <h3>Ready?</h3>
+          <ul class="rules-mini">
+            <li>You and Smiley each get 7 cards.</li>
+            <li>On your turn, say <b>“Help me with…”</b> and name a set you hold.</li>
+            <li>If Smiley has any, you get them all <i>and</i> go again. If not, draw from the Help Stack.</li>
+            <li>Four of a kind wins the set. Most sets wins the game!</li>
+          </ul>
+          <button class="btn btn-y" id="startBtn" type="button">Deal me in</button>
+        </div>
+      </div>
+      <div class="end-screen" id="endScreen">
+        <div>
+          <h3 id="endTitle">You win!</h3>
+          <p id="endText"></p>
+          <button class="btn btn-y" id="againBtn" type="button">Play again</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============================ FOOTER ============================ -->
+<footer class="foot">
+  <p class="big">Go for your<br><span class="yl">Best Life</span></p>
+  <div class="credit"><small>A game by</small><strong>Sandy Kraemer</strong></div>
+  <p class="tagline">A new fun game about life, for 2 to 6 players, ages 7 to 107.</p>
+  <div class="icons" id="footIcons"></div>
+  <p class="legal"><b>Best Selling Games</b> &middot; Gold Edition &middot; 52 Playing Cards + 48 Connecting Points<br>&copy; 2026 SFK and Associates LLC &middot; BEST LIFE&trade;</p>
+</footer>
+
+<script src="js/art.js"></script>
+<script src="js/hero3d.js"></script>
+<script src="js/main.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
