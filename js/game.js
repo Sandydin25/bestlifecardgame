@@ -27,7 +27,7 @@
   let G = null, gameId = 0, starting = false, kbd = false;
   // ?fast speeds everything up (used for automated play-testing)
   const SPEED = /[?&]fast\b/.test(location.search) ? 0.04 : 1;
-  const T = (ms) => sleep((reduce ? Math.min(ms, 250) : ms) * SPEED);
+  const T = (ms) => sleep(ms * SPEED); // same pace for everyone so turns are easy to follow
   const D = (ms) => ms * SPEED;
   if (SPEED < 1) window.__BLG = () => G; // test hooks, only with ?fast
 
@@ -149,11 +149,10 @@
       if (mine && (isNew || wasDown.get(e))) {
         e.classList.add('down');
         const delay = isNew ? si * stagger + 160 : 120;
-        setTimeout(() => e.classList.remove('down'), reduce ? 0 : D(delay));
+        setTimeout(() => e.classList.remove('down'), D(delay));
       }
       const dx = f.left - last.left, dy = f.top - last.top;
       if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
-      if (reduce) return;
       e.style.zIndex = 10;
       const a = e.animate(
         [{ transform: `translate(${dx}px, ${dy}px) rotate(${isNew ? -8 : 0}deg)` }, { transform: 'none' }],
@@ -167,7 +166,7 @@
 
   function say(html) {
     msg.innerHTML = `<div>${html}</div>`;
-    if (!reduce) msg.animate([{ transform: 'scale(.96)', opacity: 0.4 }, { transform: 'none', opacity: 1 }], { duration: 260, easing: 'ease-out' });
+    msg.animate([{ transform: 'scale(.96)', opacity: 0.4 }, { transform: 'none', opacity: 1 }], { duration: 260, easing: 'ease-out' });
   }
 
   /* ---------- sets ---------- */
@@ -180,7 +179,7 @@
       const target = (p === 0 ? setsYou : setsThem).getBoundingClientRect();
       if (p === 1) cards.forEach((c) => c.el.classList.remove('down'));
       say(p === 0 ? `<b>SET!</b> You collected all four <em>${NAME(id)}</em> cards.` : `<b>SET!</b> Smiley collected all four <em>${NAME(id)}</em> cards.`);
-      if (!reduce) {
+      {
         await T(p === 1 ? 500 : 150);
         await Promise.all(cards.map((c, i) => {
           const r = c.el.getBoundingClientRect();

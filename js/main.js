@@ -71,7 +71,6 @@
   new IntersectionObserver((es, ob) => {
     if (!es[0].isIntersecting || dealt) return;
     dealt = true; ob.disconnect();
-    if (reduce) return;
     const gr = grid.getBoundingClientRect();
     const cx = gr.left + gr.width / 2, cy = gr.top + Math.min(gr.height / 2, 300);
     slots.forEach((sl, i) => {
@@ -87,7 +86,7 @@
 
   let timers = [], shuffling = false;
   const clearTimers = () => { timers.forEach(clearTimeout); timers = []; };
-  const stagger = (fn, i, ms) => (reduce ? fn() : timers.push(setTimeout(fn, i * ms)));
+  const stagger = (fn, i, ms) => timers.push(setTimeout(fn, i * ms));
   $('#flipAllBtn').addEventListener('click', () => {
     if (shuffling) return;
     clearTimers();
@@ -100,14 +99,14 @@
     shuffling = true;
     clearTimers();
     const cards = slots.map((s) => s.querySelector('.card'));
-    if (!reduce) { cards.forEach((c) => c.classList.add('flipped')); await sleep(650); }
+    cards.forEach((c) => c.classList.add('flipped')); await sleep(650);
     const first = new Map(slots.map((s) => [s, s.getBoundingClientRect()]));
     const r = Math.random;
     const arr = slots.slice();
     for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
     arr.forEach((s) => grid.append(s));
     slots.splice(0, slots.length, ...arr);
-    if (!reduce) {
+    {
       await Promise.all(arr.map((s, i) => {
         const a = first.get(s), b = s.getBoundingClientRect();
         return s.animate([
@@ -153,9 +152,7 @@
     const dx = dr.left - wr.left + 8, dy = dr.top - wr.top - 8;
     c.style.transform = `translate(${dx}px, ${dy}px) rotate(-4deg)`;
     c.getBoundingClientRect();
-    if (!reduce) {
-      c.style.transition = 'transform .9s cubic-bezier(.2,.8,.2,1)';
-    }
+    c.style.transition = 'transform .9s cubic-bezier(.2,.8,.2,1)';
     requestAnimationFrame(() => {
       c.style.transform = `translate(0,0) rotate(${rot}deg)`;
       c.classList.remove('down');
@@ -165,7 +162,7 @@
     if (kids.length > 4) kids[0].remove();
     // quote
     quoteEl.classList.remove('on');
-    await sleep(reduce ? 0 : 280);
+    await sleep(280);
     quoteEl.innerHTML = s.quote.split(' ').map((w, i) => `<span class="w" style="transition-delay:${i * 45}ms">${w}</span>`).join(' ');
     $('#wisTagImg').src = BL.iconURI(s.icon);
     $('#wisTagName').textContent = s.name;
@@ -175,7 +172,7 @@
     $('#wisCount').textContent = `${((drawnCount - 1) % total) + 1} of ${total} sayings drawn${drawnCount > total ? ' (reshuffled)' : ''}`;
     requestAnimationFrame(() => requestAnimationFrame(() => quoteEl.classList.add('on')));
     $('#wisBtn').textContent = 'Draw another';
-    await sleep(reduce ? 0 : 700);
+    await sleep(700);
     drawing = false;
   }
   quoteEl.classList.add('on');
@@ -201,7 +198,7 @@
   }
   const sio = new IntersectionObserver((es) => es.forEach((e) => {
     if (e.isIntersecting) showScene(+e.target.dataset.scene);
-  }), { rootMargin: '-45% 0px -45% 0px' });
+  }), { rootMargin: matchMedia('(max-width: 900px)').matches ? '-64% 0px -26% 0px' : '-45% 0px -45% 0px' });
   steps.forEach((s) => sio.observe(s));
   // only animate while the how-to section is on screen
   let howVisible = false;
@@ -312,11 +309,11 @@
           f.style.left = '50%'; f.style.top = '50%';
           table.append(f);
           const dx = ((seat.x - 50) / 100) * table.offsetWidth, dy = ((seat.y - 50) / 100) * table.offsetHeight;
-          f.animate([{ transform: 'translate(0,0) rotate(0)' }, { transform: `translate(${dx * 0.82}px, ${dy * 0.82}px) rotate(${(Math.random() - 0.5) * 40 + 180}deg)` }], { duration: reduce ? 1 : 320, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'forwards' })
+          f.animate([{ transform: 'translate(0,0) rotate(0)' }, { transform: `translate(${dx * 0.82}px, ${dy * 0.82}px) rotate(${(Math.random() - 0.5) * 40 + 180}deg)` }], { duration: 320, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'forwards' })
             .finished.then(() => { f.remove(); seat.n++; $('.n', seat.el).textContent = seat.n; });
           left--;
           helpN.textContent = left;
-          await sleep(reduce ? 0 : 55);
+          await sleep(55);
         }
       }
     }
@@ -388,12 +385,17 @@
         capEl.innerHTML = `${A.name} looks right at ${B.name}…`;
         await sleep(700);
         if (run !== id) return;
-        bubble.innerHTML = `Help me with <u>${sname}</u>!`;
-        bubble.style.left = clamp(ax, 120, W - 120) + 'px';
-        const below = A.y < 35;
+        const narrow = W < 520;
+        bubble.innerHTML = (narrow ? `<small>${A.name}</small>` : '') + `Help me with <u>${sname}</u>!`;
+        const below = !narrow && A.y < 35;
         bubble.classList.toggle('below', below);
+        bubble.classList.toggle('center', narrow);
+        const bw = bubble.offsetWidth;
+        const left = narrow ? W / 2 : clamp(ax, bw / 2 + 8, W - bw / 2 - 8);
+        bubble.style.left = left + 'px';
+        bubble.style.setProperty('--tail', narrow ? '0px' : clamp(ax - left, -bw / 2 + 20, bw / 2 - 20) + 'px');
         const half = A.el.offsetHeight / 2;
-        bubble.style.top = (below ? ay + half + 30 : ay - half - 14) + 'px';
+        bubble.style.top = (narrow ? Hh * 0.5 + bubble.offsetHeight / 2 : below ? ay + half + 30 : ay - half - 14) + 'px';
         bubble.classList.add('on');
         if (reduce) { capEl.innerHTML = `“Help me with <b>${sname}</b>!”`; return; }
         capEl.innerHTML = `“Help me with <b>${sname}</b>!”`;
