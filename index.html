@@ -26,12 +26,23 @@
 
 <header class="nav" id="nav">
   <a class="nav-logo" href="#top" aria-label="Best Life — back to top">BEST LIFE</a>
+  <a class="og-badge" id="ogBadge" hidden href="onguard/" aria-label="On Guard: play Sandy’s tilting marble game"><span class="og-on"><b>ON</b></span><span class="og-guard"><b>GUARD</b></span></a>
   <nav class="nav-links" aria-label="Sections">
     <a href="#sets">The Sets</a>
     <a href="#wisdom">Wit &amp; Wisdom</a>
     <a href="#creator">Meet Sandy</a>
     <a href="#how">How to Play</a>
-    <a href="#play" class="cta">Play a Round</a>
+    <a href="#play" class="cta"><span class="cta-long">Play a Round</span><span class="cta-short">Play</span></a>
+  </nav>
+  <button class="nav-menu" id="navMenu" type="button" aria-expanded="false" aria-controls="navSheet" aria-label="Menu"><span class="nm-ico" aria-hidden="true"><i></i><i></i><i></i></span><span class="nm-label">Menu</span></button>
+  <nav class="nav-sheet" id="navSheet" aria-label="All sections" hidden>
+    <a href="#sets">The Sets</a>
+    <a href="#wisdom">Wit &amp; Wisdom</a>
+    <a href="#creator">Meet Sandy</a>
+    <a href="#how">How to Play</a>
+    <a href="#play">Play a Round</a>
+    <a href="#maker" data-maker>Make your own card</a>
+    <a href="onguard/" class="sheet-og" hidden><span class="og-badge mini" aria-hidden="true"><span class="og-on"><b>ON</b></span><span class="og-guard"><b>GUARD</b></span></span> Sandy’s tilting game</a>
   </nav>
 </header>
 
@@ -101,11 +112,31 @@
     <div class="grid-tools reveal">
       <button class="btn btn-ink" id="shuffleBtn" type="button">Shuffle</button>
       <button class="btn btn-ink" id="flipAllBtn" type="button">Flip all</button>
+      <button class="btn btn-y" id="makeBtn" type="button"><span aria-hidden="true">✎</span> Make your own card</button>
     </div>
     <div class="set-grid" id="setGrid"></div>
     <p class="grid-note">Tap any card to see its set’s next Connecting Point &middot; 48 in all</p>
     <div class="action-head reveal"><h3 class="display">Plus 4 Action cards</h3><p>Two of each, mixed into the deck.</p></div>
     <div class="set-grid action-row" id="actionRow"></div>
+
+    <dialog class="maker" id="maker" aria-labelledby="makerTitle">
+      <form method="dialog" class="mk-wrap" id="makerForm">
+        <button class="mk-x" type="submit" value="close" aria-label="Close">✕</button>
+        <div class="mk-preview"><div class="mk-card" id="mkCard"></div></div>
+        <div class="mk-form">
+          <h3 class="display" id="makerTitle">Make your own card</h3>
+          <p class="mk-sub">Pick a style, name your set, and write your own Connecting Point.</p>
+          <fieldset class="mk-styles"><legend>Style</legend><div class="mk-swatches" id="mkSwatches"></div></fieldset>
+          <label class="mk-field">Set name<input id="mkName" maxlength="12" autocomplete="off" value="GRANDPA"><small><span id="mkNameN">7</span>/12</small></label>
+          <label class="mk-field">Connecting Point<textarea id="mkQuote" maxlength="64" rows="3">Every family should play this game.</textarea><small><span id="mkQuoteN">35</span>/64</small></label>
+          <div class="mk-btns">
+            <button class="btn btn-y" type="button" id="mkSave">Save picture</button>
+            <button class="btn btn-ink" type="submit" value="close">Done</button>
+          </div>
+          <p class="mk-note" id="mkNote" role="status"></p>
+        </div>
+      </form>
+    </dialog>
   </section>
 
   <!-- ============================ WISDOM ============================ -->
@@ -213,8 +244,11 @@
     </div>
     <div class="play-stage" id="playStage">
       <div class="stage-bar">
+        <button class="fs-btn st-back" id="stBack" type="button" hidden><span aria-hidden="true">←</span> Menu</button>
+        <span class="sb-gap"></span>
+        <button class="fs-btn" id="soundBtn" type="button"><span aria-hidden="true">🔊</span> Sound on</button>
         <button class="fs-btn" id="fsBtn" type="button"><span aria-hidden="true">⤢</span> Full screen</button>
-        <button class="fs-btn fs-exit" id="fsExit" type="button"><span aria-hidden="true">✕</span> Exit full screen</button>
+        <button class="fs-btn fs-exit" id="fsExit" type="button"><span aria-hidden="true">⤡</span> Exit full screen</button>
       </div>
       <div class="board" id="board">
         <div class="seat them">
@@ -261,14 +295,16 @@
           <div>
             <h3 id="endTitle">You win!</h3>
             <p id="endText"></p>
+            <p class="end-cp" id="endCp"></p>
             <button class="btn btn-y" id="againBtn" type="button">Play again</button>
-            <button class="o-link" id="menuBtn" type="button">Back to menu</button>
+            <button class="btn btn-ghost" id="shareBtn" type="button">Share results</button>
+            <br><button class="o-link" id="menuBtn" type="button">Back to menu</button>
           </div>
         </div>
       </div>
       <div class="board oboard" id="oboard" hidden>
         <div class="o-top">
-          <div class="o-bar"><span class="o-code" id="oCode"></span><button class="o-leave" id="oLeave" type="button">Leave game</button></div>
+          <div class="o-bar"><span class="o-code" id="oCode"></span></div>
           <div class="o-opps" id="oOpps"></div>
         </div>
         <div class="mid">
@@ -302,7 +338,16 @@
 <script src="js/stats.js"></script>
 <script src="js/engine.js"></script>
 <script src="js/main.js"></script>
+<script src="js/sound.js"></script>
 <script src="js/game.js"></script>
-<script src="js/hero3d.js"></script>
+<script>
+  // the 3D box (big): load it right away, except for invite links, which go straight to the game
+  (function () {
+    var s = document.createElement('script');
+    s.src = 'js/hero3d.js';
+    if (/[?&]join=/.test(location.search)) addEventListener('load', function () { setTimeout(function () { document.body.appendChild(s); }, 1200); });
+    else document.body.appendChild(s);
+  })();
+</script>
 </body>
 </html>

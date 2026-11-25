@@ -3,7 +3,31 @@
 The website for **Best Life**, the card game about life created by Sandy Kraemer.
 Live at https://bestlifecardgame.us
 
-A plain static site (HTML, CSS and JavaScript) with no build step needed to serve it.
-`js/hero3d.js` is a bundled build of the 3D opening scene (three.js).
+A plain static site (HTML, CSS and JavaScript). GitHub Pages serves this folder as is.
+
+## Files
+- `index.html`, `styles.css`: the page.
+- `js/art.js`: the 12 sets, all 48 Connecting Points, icons and card builders.
+- `js/main.js`: gallery, wisdom deck, How to Play scenes, mobile menu, "Make your own card".
+- `js/game.js`: the round against Smiley, full screen, the game bar. `js/sound.js`: game sounds.
+- `js/engine.js`: the rules used for online games (pure functions, no page code).
+- `js/stats.js`, `stats.html`: anonymous counts (visits, games played).
+- `js/config.js`: the Firebase web config. These values are public by design; the browser key is
+  restricted to this site's addresses in Google Cloud, and `database.rules.json` protects the data.
+
+## Bundled files (built, but committed so the site needs no build to serve)
+`js/hero3d.js` (the 3D box, three.js), `js/online.js` (family games online, Firebase) and
+`js/maker.js` (the card painter for "Make your own card") are built from `build/src/`:
+
+```
+cd build
+npm install
+npm run build
+```
+
+## Firebase
+- Project `best-life-card-game`: Realtime Database plus anonymous sign-in.
+- `database.rules.json` is the source of truth for the security rules. Paste it into
+  Firebase console > Realtime Database > Rules and publish after any change.
 
 © 2026 SFK and Associates LLC · BEST LIFE™

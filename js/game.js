@@ -27,8 +27,13 @@
   let G = null, gameId = 0, starting = false, kbd = false;
   // ?fast speeds everything up (used for automated play-testing)
   const SPEED = /[?&]fast\b/.test(location.search) ? 0.04 : 1;
-  const T = (ms) => sleep(ms * SPEED); // same pace for everyone so turns are easy to follow
+  // Every pause checks the round is still the same one, so "Menu" mid-game stops Smiley cleanly.
+  const ABORT = { abort: true };
+  const T = (ms) => { const g = G; return sleep(ms * SPEED).then(() => { if (!g || G !== g) throw ABORT; }); };
   const D = (ms) => ms * SPEED;
+  const sound = (k) => BL.sound && BL.sound(k);
+  BL.touch = matchMedia('(hover: none)').matches;
+  addEventListener('unhandledrejection', (e) => { if (e.reason === ABORT || (e.reason && e.reason.name === 'AbortError')) e.preventDefault(); });
   if (SPEED < 1) window.__BLG = () => G; // test hooks, only with ?fast
 
   function newGame() {
@@ -39,9 +44,11 @@
     G = { deck, hands: [[], []], won: [[], []], turn: 0, busy: true, memory: new Set() };
     return G;
   }
+  // each game card is a real card from the deck, with its own Connecting Point
+  const quoteOf = (c) => { const q = BL.set(c.set).quotes; return q[(parseInt(c.key.slice(c.set.length), 10) || 0) % q.length]; };
   const elFor = (c) => {
     if (!c.el) {
-      c.el = BL.card(c.set, { mini: true, cls: 'gcard', label: false });
+      c.el = BL.card(c.set, { cls: 'gcard', label: false, quote: quoteOf(c) });
       const mine = () => c.el.parentElement === handYou;
       c.el.addEventListener('click', (e) => { if (mine()) { kbd = false; humanAsk(c.set); } });
       c.el.addEventListener('pointerenter', () => { if (mine()) highlight(c.set, true); });
@@ -72,13 +79,20 @@
     handYou.style.setProperty('--ov', ov + 'px');
     handYou.style.setProperty('--gap', gap + 'px');
     // Smiley's hand (card backs) always overlaps
-    const m = G ? G.hands[1].length : 7, av2 = handThem.clientWidth - 16;
+    const m = G ? G.hands[1].length : 7, av2 = handThem.clientWidth - 16 - (m > 2 ? gw * 0.8 : 0); // room for the fan's tilt
     let w2 = gw;
     if (m > 1 && w2 + (m - 1) * w2 * 0.2 > av2) w2 = Math.max(26, av2 / (1 + (m - 1) * 0.2));
     const ov2 = m > 1 ? Math.max(-w2 * 0.8, Math.min(-w2 * 0.45, (av2 - m * w2) / (m - 1))) : 0;
     handThem.style.setProperty('--gw', w2 + 'px');
     handThem.style.setProperty('--ov2', ov2 + 'px');
+    fanOut(handThem);
   }
+  /** spread a row of face-down cards into a gentle fan (pivot above, like a hand held across the table) */
+  function fanOut(row) {
+    const cards = row.querySelectorAll('.gcard'), m = cards.length, mid = (m - 1) / 2, step = Math.min(5, 24 / Math.max(1, m));
+    cards.forEach((e, i) => { e.style.rotate = `${(mid - i) * step}deg`; });
+  }
+  BL.fanOut = fanOut;
   const groupsOf = (p) => new Set(G.hands[p].map((c) => c.set)).size;
 
   function render() {
@@ -86,6 +100,7 @@
     let prev = null;
     for (const c of G.hands[0]) {
       const e = elFor(c);
+      e.style.rotate = ''; // (a card Smiley handed over was part of his fan)
       e.classList.toggle('gstart', prev !== null && prev !== c.set);
       prev = c.set;
       handYou.append(e);
@@ -111,11 +126,17 @@
 
   function renderAskBar() {
     askBar.innerHTML = '';
-    if (G.turn !== 0 || G.busy || !G.hands[0].length) return;
-    askBar.append(Object.assign(document.createElement('span'), { className: 'prompt', textContent: 'Help me with…' }));
     const counts = {};
     G.hands[0].forEach((c) => (counts[c.set] = (counts[c.set] || 0) + 1));
-    Object.keys(counts).sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b)).forEach((id) => {
+    const ids = Object.keys(counts).sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b));
+    handYou.classList.toggle('locked', G.turn !== 0 || G.busy);
+    if (G.turn !== 0 || G.busy || !G.hands[0].length) {
+      // not your turn: an easy-to-read summary of your hand
+      if (ids.length && !G.done) askBar.innerHTML = `<span class="hand-sum">Your cards: ${ids.map((id) => `<b>${NAME(id)}</b>${counts[id] > 1 ? ` ×${counts[id]}` : ''}`).join(' · ')}<small class="peek-tip">${BL.touch ? 'Press and hold a card to read it' : 'Point at a card to read it'}</small></span>`;
+      return;
+    }
+    askBar.append(Object.assign(document.createElement('span'), { className: 'prompt', textContent: 'Help me with…' }));
+    ids.forEach((id) => {
       const b = document.createElement('button');
       b.type = 'button';
       b.innerHTML = `<img src="${BL.iconURI(BL.set(id).icon)}" alt="">${NAME(id)}<span style="opacity:.55">×${counts[id]}</span>`;
@@ -130,7 +151,8 @@
   }
 
   /** FLIP every card in the hands across a state change. New cards fly from the Help Stack. */
-  async function flip(mutate, { stagger = 0, from = null, order = null } = {}) {
+  async function flip(mutate, { stagger = 0, from = null, order = null, grow = false, onStart = null } = {}) {
+    const g = G;
     const els = Array.from(board.querySelectorAll('.hand .gcard'));
     const first = new Map(els.map((e) => [e, e.getBoundingClientRect()]));
     const wasDown = new Map(els.map((e) => [e, e.classList.contains('down')]));
@@ -140,14 +162,15 @@
     const anims = [];
     let k = 0;
     const idx = order ? new Map(order.map((e, i) => [e, i])) : null;
+    const arrivals = [];
     board.querySelectorAll('.hand .gcard').forEach((e) => {
       const si = idx && idx.has(e) ? idx.get(e) : k;
       const last = e.getBoundingClientRect();
       const f = first.get(e) || origin;
       const isNew = !first.has(e);
       const mine = e.parentElement === handYou;
-      // cards arriving in your hand flip face up on the way
-      if (mine && (isNew || wasDown.get(e))) {
+      // cards arriving in your hand flip face up on the way (a revealed card is already face up)
+      if (mine && (isNew ? !grow : wasDown.get(e))) {
         e.classList.add('down');
         const delay = isNew ? si * stagger + 160 : 120;
         setTimeout(() => e.classList.remove('down'), D(delay));
@@ -155,14 +178,23 @@
       const dx = f.left - last.left, dy = f.top - last.top;
       if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
       e.style.zIndex = 10;
+      const big = grow && isNew;
+      if (big) e.style.transformOrigin = '0 0';
       const a = e.animate(
-        [{ transform: `translate(${dx}px, ${dy}px) rotate(${isNew ? -8 : 0}deg)` }, { transform: 'none' }],
-        { duration: D(620), delay: isNew ? D(si * stagger) : 0, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }
+        [{ transform: big ? `translate(${dx}px, ${dy}px) scale(${f.width / last.width})` : `translate(${dx}px, ${dy}px) rotate(${isNew ? -8 : 0}deg)` }, { transform: 'none' }],
+        { duration: D(big ? 560 : 620), delay: isNew ? D(si * stagger) : 0, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }
       );
-      if (isNew) k++;
+      if (big) a.finished.then(() => (e.style.transformOrigin = ''), () => {});
+      if (isNew) { k++; arrivals.push(si); }
       anims.push(a.finished.then(() => (e.style.zIndex = '')));
     });
+    if (onStart) onStart();
+    // a soft flick per card dealt or drawn; one for a hand-over
+    if (grow) { /* the reveal already flicked */ }
+    else if (arrivals.length) arrivals.slice(0, 14).forEach((si) => setTimeout(() => sound('flick'), D(si * stagger)));
+    else if (anims.length) sound('flick');
     await Promise.all(anims);
+    if (G !== g) throw ABORT;
   }
 
   function say(html) {
@@ -179,7 +211,10 @@
       const cards = G.hands[p].filter((c) => c.set === id);
       const target = (p === 0 ? setsYou : setsThem).getBoundingClientRect();
       if (p === 1) cards.forEach((c) => c.el.classList.remove('down'));
-      say(p === 0 ? `<b>SET!</b> You collected all four <em>${NAME(id)}</em> cards.` : `<b>SET!</b> Smiley collected all four <em>${NAME(id)}</em> cards.`);
+      // celebrate with one of the set's Connecting Points
+      const cp = BL.set(id).quotes[(G.won[0].length + G.won[1].length) % 4];
+      say(`<b>SET!</b> ${p === 0 ? 'You' : 'Smiley'} collected all four <em>${NAME(id)}</em> cards.<span class="cp">“${cp}”</span>`);
+      sound('set');
       {
         await T(p === 1 ? 500 : 150);
         await Promise.all(cards.map((c, i) => {
@@ -202,17 +237,54 @@
       G.memory.delete(id);
       render();
       if (p === 0) confetti(s, 50);
-      await T(700);
+      await T(1600); // time to read the Connecting Point
     }
   }
   const over = () => G.won[0].length + G.won[1].length === 12;
 
-  async function drawFor(p, { stagger = 0 } = {}) {
+  async function drawFor(p, { stagger = 0, note = null } = {}) {
     if (!G.deck.length) return null;
     const c = G.deck.pop();
-    await flip(() => G.hands[p].push(c), { stagger });
+    if (p === 0) {
+      const big = await reveal(c.set, quoteOf(c), pileEl.getBoundingClientRect(), D(1600), note && (() => say(note(c))));
+      await flip(() => G.hands[p].push(c), { from: big.getBoundingClientRect(), grow: true, onStart: () => big.remove() });
+    } else await flip(() => G.hands[p].push(c), { stagger });
     return c;
   }
+
+  /** a card flies from `from`, flips face up big in the middle of the board, and waits there */
+  async function reveal(setId, quote, from, hold, onShow) {
+    const g = G;
+    const root = document.fullscreenElement || document.body;
+    const br = board.getBoundingClientRect();
+    const W = Math.round(Math.min(210, br.width * 0.46, innerHeight * 0.3));
+    const c = BL.card(setId, { cls: 'card-pop down', label: false, quote });
+    c.style.setProperty('--cw', W + 'px');
+    // just below the message box (so "You drew…" stays readable), on the way down to the hand
+    const mr = (board.hidden ? $('#oMsg') : msg).getBoundingClientRect();
+    const x = br.left + br.width / 2 - W / 2, y = Math.max(8, Math.min(innerHeight - W * 1.4 - 8, mr.bottom + 10));
+    c.style.left = x + 'px';
+    c.style.top = y + 'px';
+    root.append(c);
+    c.animate([{ transform: `translate(${from.left - x}px, ${from.top - y}px) scale(${from.width / W}) rotate(-8deg)` }, { transform: 'none' }],
+      { duration: D(460), easing: 'cubic-bezier(.2,.8,.2,1)' });
+    sound('flick');
+    if (onShow) onShow();
+    // flip face up in flat 2D (Safari ghosts overlapping 3D flips): squeeze to an edge, swap faces, open up
+    const inner = c.querySelector('.card-inner');
+    setTimeout(() => {
+      const shut = inner.animate([{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }], { duration: D(150), easing: 'ease-in', fill: 'forwards' });
+      shut.finished.then(() => {
+        c.classList.remove('down');
+        inner.animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: D(220), easing: 'cubic-bezier(.2,.8,.2,1)' });
+        shut.cancel(); // let go of the squeezed end state
+      }, () => {});
+    }, D(240));
+    try { await sleep(hold); } finally { if (G !== g) c.remove(); }
+    if (G !== g) throw ABORT;
+    return c;
+  }
+  BL.reveal = (setId, quote, from, hold) => reveal(setId, quote, from, hold);
 
   /* ---------- turns ---------- */
   async function humanAsk(set) {
@@ -240,19 +312,12 @@
       say(`Smiley: “Sorry, no <em>${NAME(set)}</em>.” <br>Off to the Help Stack!`);
       await T(1100);
     }
-    const c = await drawFor(0);
+    const c = await drawFor(0, { note: (d) => (d.set === set ? `You drew ${AN(set)} <em>${NAME(set)}</em>, just what you asked for! Go again.` : `You drew ${AN(d.set)} <em>${NAME(d.set)}</em>.`) });
     if (c) {
-      if (c.set === set) {
-        say(`You drew ${AN(set)} <em>${NAME(set)}</em>, just what you asked for! Go again.`);
-        await T(900);
-        await checkSets(0);
-        if (over()) return finish();
-        return yourTurn(true);
-      }
-      say(`You drew ${AN(c.set)} <em>${NAME(c.set)}</em>.`);
-      await T(900);
+      await T(350);
       await checkSets(0);
       if (over()) return finish();
+      if (c.set === set) return yourTurn(true);
     }
     G.turn = 1;
     render();
@@ -265,7 +330,7 @@
       if (G.deck.length) {
         say('You’re out of cards, so you draw from the Help Stack.');
         await T(700);
-        await drawFor(0);
+        await drawFor(0, { note: (d) => `You drew ${AN(d.set)} <em>${NAME(d.set)}</em>.` });
         await checkSets(0);
         if (over()) return finish();
       } else {
@@ -274,7 +339,7 @@
       }
     }
     G.busy = false;
-    if (!again) say('Your turn! Tap a card or pick a set below.');
+    if (!again) { say('<b>Your turn!</b> Tap a card or pick a set below.'); sound('turn'); }
     render();
   }
 
@@ -346,6 +411,7 @@
     newGame();
     startScreen.classList.remove('on');
     endScreen.classList.remove('on');
+    syncBar();
     board.focus({ preventScroll: true });
     render();
     say('Shuffling and dealing 7 cards each…');
@@ -365,13 +431,32 @@
   function finish() {
     BL.stats.hit('soloGamesFinished');
     G.busy = true;
+    G.done = true;
     render();
+    syncBar();
     const a = G.won[0].length, b = G.won[1].length;
     $('#endTitle').textContent = a > b ? 'You win!' : a < b ? 'Smiley wins!' : 'It’s a tie!';
     $('#endText').textContent = `You collected ${a} set${a === 1 ? '' : 's'}, Smiley collected ${b}. ${a >= b ? 'That’s living your Best Life!' : 'Ask again next time!'}`;
+    // a Connecting Point from one of the sets you won (or any set)
+    const pool = G.won[0].length ? G.won[0] : ORDER;
+    const cpSet = BL.set(pool[Math.floor(Math.random() * pool.length)]);
+    $('#endCp').innerHTML = `“${cpSet.quotes[Math.floor(Math.random() * 4)]}”<small>${cpSet.name} Connecting Point</small>`;
+    endScreen._share = a > b ? `I just beat Smiley ${a} to ${b} at Best Life! Can you beat Smiley too? 🏆`
+      : a < b ? `Smiley beat me ${b} to ${a} at Best Life. Can you do better?` : `Smiley and I tied ${a} to ${b} at Best Life! Your turn.`;
     endScreen.classList.add('on');
     $('#againBtn').focus({ preventScroll: true });
+    setTimeout(() => sound(a >= b ? 'win' : 'end'), 250);
     if (a >= b) for (let i = 0; i < 3; i++) setTimeout(() => confetti(BL.SETS[(i * 5) % 12], 120), i * 250);
+  }
+
+  /** stop the current round right away (the stage bar's Menu button) */
+  function quit() {
+    gameId++;
+    G = null;
+    starting = false;
+    handYou.innerHTML = ''; handThem.innerHTML = ''; setsYou.innerHTML = ''; setsThem.innerHTML = ''; askBar.innerHTML = '';
+    msg.innerHTML = '';
+    BL.playMenu();
   }
 
   /* ---------- confetti ---------- */
@@ -381,7 +466,7 @@
     cv.className = 'confetti';
     cv.width = innerWidth * devicePixelRatio; cv.height = innerHeight * devicePixelRatio;
     cv.style.width = '100%'; cv.style.height = '100%';
-    document.body.append(cv);
+    (document.fullscreenElement || document.body).append(cv); // native full screen only shows the stage
     const ctx = cv.getContext('2d');
     ctx.scale(devicePixelRatio, devicePixelRatio);
     const cols = [s.bg, '#ffe31a', '#ffffff', s.title, '#f37a1f'];
@@ -403,19 +488,39 @@
     })(t0);
   }
 
+  /** share a line of text (results), or copy it when the device can't share */
+  BL.shareText = async (text, btn) => {
+    const url = `${location.origin}${location.pathname}`;
+    const done = (t) => { if (!btn) return; const old = btn.textContent; btn.textContent = t; setTimeout(() => (btn.textContent = old), 2600); };
+    try { if (navigator.share) { await navigator.share({ title: 'Best Life', text, url }); return; } }
+    catch (e) { if (e && e.name === 'AbortError') return; }
+    try { await navigator.clipboard.writeText(`${text}\n${url}`); done('Copied! Paste it in a text'); }
+    catch (e) { done('Couldn’t share on this device'); }
+  };
+
   if (SPEED < 1) window.__BLtest = { render: () => render(), elFor };
   $('#startBtn').addEventListener('click', start);
   $('#againBtn').addEventListener('click', start);
+  $('#shareBtn').addEventListener('click', (e) => BL.shareText(endScreen._share || 'Come play Best Life!', e.currentTarget));
   BL.confetti = confetti;
 
   /* ---------- full-screen play + boards + online ---------- */
   const stage = $('#playStage'), oboard = $('#oboard');
   const canNativeFS = !!(document.fullscreenEnabled && stage.requestFullscreen);
+  // while the game fills the screen, the rest of the page can't take focus (keyboard / screen readers)
+  function inertOutside(on) {
+    const keep = new Set();
+    for (let n = stage; n && n !== document.body; n = n.parentElement) keep.add(n);
+    for (let n = stage; n && n !== document.body; n = n.parentElement) {
+      for (const sib of n.parentElement.children) if (!keep.has(sib) && sib.tagName !== 'SCRIPT') sib.inert = on;
+    }
+  }
   BL.fs = {
     on: false,
     enter() {
       if (BL.fs.on) return;
       BL.fs.on = true;
+      inertOutside(true);
       stage.classList.add('fs');
       document.documentElement.classList.add('fs-lock');
       if (canNativeFS && !document.fullscreenElement) stage.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
@@ -424,6 +529,7 @@
     exit() {
       if (!BL.fs.on) return;
       BL.fs.on = false;
+      inertOutside(false);
       stage.classList.remove('fs');
       document.documentElement.classList.remove('fs-lock');
       if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
@@ -443,14 +549,49 @@
     oboard.hidden = !online;
     board.hidden = online;
     stage.classList.toggle('is-online', online);
+    syncBar();
   };
   BL.playMenu = () => {
     BL.showBoard('solo');
     endScreen.classList.remove('on');
     startScreen.classList.add('on');
+    syncBar();
     (startScreen.querySelector('button') || board).focus({ preventScroll: true });
   };
   $('#menuBtn').addEventListener('click', () => BL.playMenu());
+
+  /* the stage bar's left button: "Menu" during a solo round, "Leave game" / "End game" online.
+     Anything that throws away a game in progress needs a second tap. */
+  const stBack = $('#stBack');
+  let armT = 0;
+  function syncBar(force) {
+    if (!force && stBack.classList.contains('armed')) return;
+    clearTimeout(armT);
+    stBack.classList.remove('armed');
+    const online = stage.classList.contains('is-online');
+    if (online) {
+      const info = BL.online ? BL.online.leaveInfo() : { label: 'Leave game' };
+      stBack.hidden = !(BL.online && BL.online.room);
+      stBack.innerHTML = `<span aria-hidden="true">✕</span> ${info.label}`;
+    } else {
+      stBack.hidden = !(G && !G.done) || startScreen.classList.contains('on');
+      stBack.innerHTML = '<span aria-hidden="true">←</span> Menu';
+    }
+  }
+  BL.syncBar = syncBar;
+  stBack.addEventListener('click', () => {
+    const online = stage.classList.contains('is-online');
+    const confirm = online ? (BL.online ? BL.online.leaveInfo().confirm : null) : (G && !G.done ? 'Tap again to quit this round' : null);
+    if (confirm && !stBack.classList.contains('armed')) {
+      stBack.classList.add('armed');
+      stBack.textContent = confirm;
+      clearTimeout(armT);
+      armT = setTimeout(() => syncBar(true), 4000);
+      return;
+    }
+    stBack.classList.remove('armed');
+    if (online) { if (BL.online) BL.online.leave(); BL.playMenu(); } else quit();
+  });
 
   let onlineP = null;
   BL.loadOnline = () => {
@@ -487,15 +628,37 @@
   }
   $('#createBtn').addEventListener('click', () => openOnline('create'));
   $('#joinBtn').addEventListener('click', () => openOnline('join'));
-  $('#oLeave').addEventListener('click', () => { if (BL.online) BL.online.leave(); BL.playMenu(); });
   // invite links: bestlifecardgame.us/?join=ABCD
   const joinCode = (new URLSearchParams(location.search).get('join') || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
   if (joinCode.length === 4) {
-    addEventListener('load', () => {
-      document.getElementById('play').scrollIntoView({ behavior: 'auto' });
-      openOnline('join', joinCode);
-    });
+    document.getElementById('play').scrollIntoView({ behavior: 'auto' });
+    openOnline('join', joinCode);
   }
   addEventListener('resize', () => G && sizeCards());
   board.style.setProperty('--gw', '82px');
+
+  /* Phones have no hover: press and hold a card in your hand to see it big (and read its Connecting Point).
+     A long press doesn't count as a tap, so it never asks for the set by accident. */
+  BL.peekable = (hand) => {
+    let t = 0, card = null;
+    // cards near an edge grow inward so the whole card stays on screen
+    const aim = (c) => {
+      const r = c.getBoundingClientRect(), edge = r.width * 0.75;
+      c.style.transformOrigin = r.left < edge ? '0% 100%' : r.right > innerWidth - edge ? '100% 100%' : '';
+    };
+    hand.addEventListener('pointerover', (e) => { const c = e.target.closest('.gcard'); if (c && e.pointerType === 'mouse') aim(c); });
+    const end = () => { clearTimeout(t); if (card) card.classList.remove('peek'); card = null; };
+    hand.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse') return;
+      const c = e.target.closest('.gcard');
+      if (!c) return;
+      end();
+      t = setTimeout(() => { card = c; aim(c); c.classList.add('peek'); hand._peeked = true; }, 380);
+    });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach((k) => hand.addEventListener(k, end));
+    hand.addEventListener('pointermove', (e) => { if (!card && (Math.abs(e.movementX) > 6 || Math.abs(e.movementY) > 6)) clearTimeout(t); });
+    hand.addEventListener('contextmenu', (e) => { if (e.target.closest('.gcard')) e.preventDefault(); });
+    hand.addEventListener('click', (e) => { if (hand._peeked) { hand._peeked = false; e.stopPropagation(); e.preventDefault(); } }, true);
+  };
+  BL.peekable(handYou);
 })();

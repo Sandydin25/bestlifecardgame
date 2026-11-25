@@ -25,6 +25,37 @@
   addEventListener('scroll', onScrollNav, { passive: true });
   onScrollNav();
 
+  // On Guard: the red and blue arrows sweep across the screen, then Sandy's tilting game opens
+  const goOnGuard = (e) => {
+    const a = e.target.closest('a[href="onguard/"]');
+    if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    const w = BL.el('div', 'og-wipe', '<i class="r"><b>ON</b></i><i class="b"><b>GUARD</b></i>');
+    w.setAttribute('aria-hidden', 'true');
+    document.body.append(w);
+    try { sessionStorage.setItem('og-from', 'bestlife'); } catch (err) {}
+    setTimeout(() => { location.href = a.href; }, 640);
+  };
+  document.addEventListener('click', goOnGuard);
+  addEventListener('pageshow', (e) => { if (e.persisted) document.querySelectorAll('.og-wipe').forEach((w) => w.remove()); });
+
+  // phones: a Menu button opens a sheet with every section
+  const navBtn = $('#navMenu'), sheet = $('#navSheet');
+  const setSheet = (open) => { sheet.hidden = !open; navBtn.setAttribute('aria-expanded', String(open)); };
+  navBtn.addEventListener('click', () => {
+    setSheet(sheet.hidden);
+    if (!sheet.hidden) sheet.querySelector('a').focus({ preventScroll: true });
+  });
+  sheet.addEventListener('click', (e) => {
+    const a = e.target.closest('a');
+    if (!a) return;
+    setSheet(false);
+    if (a.hasAttribute('data-maker')) { e.preventDefault(); BL.openMaker && BL.openMaker(); }
+  });
+  document.addEventListener('click', (e) => { if (!sheet.hidden && !sheet.contains(e.target) && !navBtn.contains(e.target)) setSheet(false); });
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && !sheet.hidden) { setSheet(false); navBtn.focus(); } });
+  addEventListener('resize', () => { if (!sheet.hidden && innerWidth > 760) setSheet(false); });
+
   /* ================================================================== */
   /*  REVEAL                                                            */
   /* ================================================================== */
@@ -226,7 +257,7 @@
   }
   const sio = new IntersectionObserver((es) => es.forEach((e) => {
     if (e.isIntersecting) showScene(+e.target.dataset.scene);
-  }), { rootMargin: matchMedia('(max-width: 900px)').matches ? '-64% 0px -26% 0px' : '-45% 0px -45% 0px' });
+  }), { rootMargin: matchMedia('(max-width: 900px) and (min-height: 561px)').matches ? '-64% 0px -26% 0px' : '-45% 0px -45% 0px' }); // phone portrait has the scene stuck on top
   steps.forEach((s) => sio.observe(s));
   // only animate while the how-to section is on screen
   let howVisible = false;
@@ -451,6 +482,113 @@
     sceneHooks[3] = { start() { loop(++run); }, stop() { run++; } };
   }
   showScene(0);
+
+  /* ================================================================== */
+  /*  MAKE YOUR OWN CARD                                                */
+  /* ================================================================== */
+  const maker = $('#maker');
+  if (maker) {
+    const sw = $('#mkSwatches'), nameIn = $('#mkName'), quoteIn = $('#mkQuote'), cardBox = $('#mkCard'), note = $('#mkNote');
+    let style = 'family';
+    BL.SETS.forEach((s) => {
+      const b = BL.el('button', '', `<img src="${BL.iconURI(s.icon)}" alt="">`);
+      b.type = 'button';
+      b.dataset.set = s.id;
+      b.style.background = s.bg;
+      b.setAttribute('aria-label', `${s.name.charAt(0)}${s.name.slice(1).toLowerCase()} style`);
+      b.setAttribute('aria-pressed', String(s.id === style));
+      sw.append(b);
+    });
+    // long names shrink to fit the white band, like the printed cards
+    const meas = document.createElement('canvas').getContext('2d');
+    const titleSize = (base, text) => {
+      meas.font = '400 100px "Archivo Black"';
+      const w = meas.measureText(text).width / 100;
+      return Math.min(base.fs, 72 / (w + Math.max(0, text.length - 1) * base.ls));
+    };
+    const tidy = (t, max) => t.replace(/\s+/g, ' ').slice(0, max).trim();
+    const custom = () => {
+      const base = BL.set(style);
+      const name = tidy(nameIn.value.toUpperCase(), 12) || base.name;
+      const quote = tidy(quoteIn.value, 64) || base.quote;
+      return Object.assign({}, base, { name, quote, fs: titleSize(base, name) });
+    };
+    const keyOf = (s) => `${style}|${s.name}|${s.quote}`;
+    let pic = null, picKey = '', picT = 0, painter = null;
+    const loadPainter = () => painter || (painter = new Promise((res, rej) => {
+      const sc = document.createElement('script');
+      sc.src = 'js/maker.js';
+      sc.onload = () => (BL.paintPoster ? res() : rej(new Error('painter')));
+      sc.onerror = () => { painter = null; rej(new Error('Couldn’t load. Check your connection.')); };
+      document.body.append(sc);
+    }));
+    async function makePic() {
+      await loadPainter();
+      const s = custom(), key = keyOf(s);
+      if (pic && picKey === key) return pic;
+      const canvas = await BL.paintPoster(s);
+      const blob = await new Promise((r) => canvas.toBlob(r, 'image/png'));
+      const slug = s.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'card';
+      pic = new File([blob], `best-life-${slug}.png`, { type: 'image/png' });
+      picKey = key;
+      return pic;
+    }
+    function draw() {
+      const s = custom();
+      const c = BL.card(style, { label: false });
+      c.querySelector('.f-band span').textContent = s.name;
+      c.querySelector('.face.front').style.setProperty('--fs', s.fs + 'cqw');
+      c.querySelector('.f-cp p').textContent = s.quote;
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', `Your card: ${s.name}. Connecting Point: ${s.quote}`);
+      cardBox.replaceChildren(c);
+      $('#mkNameN').textContent = nameIn.value.length;
+      $('#mkQuoteN').textContent = quoteIn.value.length;
+      // get the picture ready in the background, so "Save picture" can share it straight away
+      clearTimeout(picT);
+      picT = setTimeout(() => makePic().catch(() => {}), 500);
+    }
+    sw.addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      style = b.dataset.set;
+      sw.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      draw();
+    });
+    nameIn.addEventListener('input', draw);
+    quoteIn.addEventListener('input', draw);
+    quoteIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') e.preventDefault(); });
+    BL.openMaker = () => {
+      note.textContent = '';
+      if (maker.showModal) maker.showModal(); else maker.setAttribute('open', '');
+      draw();
+      document.fonts.load('400 20px "Archivo Black"').then(draw, () => {});
+    };
+    $('#makeBtn').addEventListener('click', () => BL.openMaker());
+    function download(file) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(file);
+      a.download = file.name;
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+      note.textContent = 'Saved! Look in your downloads.';
+    }
+    $('#mkSave').addEventListener('click', async () => {
+      const s = custom();
+      // share right inside the tap when the picture is ready (phones only allow sharing straight after a tap)
+      const ready = pic && picKey === keyOf(s) ? pic : null;
+      if (!ready) note.textContent = 'Making your picture…';
+      let file;
+      try { file = ready || (await makePic()); } catch (e) { note.textContent = 'Sorry, that didn’t work. Please try again.'; return; }
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file], title: 'My Best Life card' }); note.textContent = ''; return; }
+        catch (e) { if (e && e.name === 'AbortError') { note.textContent = ''; return; } }
+      }
+      download(file);
+    });
+  }
 
   /* ================================================================== */
   /*  FOOTER                                                            */

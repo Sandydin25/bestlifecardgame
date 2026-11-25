@@ -1,0 +1,21 @@
+{
+  "name": "best-life-build",
+  "version": "1.0.0",
+  "description": "Bundles the 3D opening scene and online play for bestlifecardgame.us",
+  "scripts": {
+    "build": "esbuild src/hero.js --bundle --format=iife --minify --target=es2020 --legal-comments=none --outfile=../js/hero3d.js && esbuild src/online.js --bundle --format=iife --minify --target=es2020 --legal-comments=none --outfile=../js/online.js && esbuild src/maker.js --bundle --format=iife --minify --target=es2020 --legal-comments=none --outfile=../js/maker.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "esbuild": "^0.28.2",
+    "firebase": "^13.4.0",
+    "three": "^0.187.0"
+  },
+  "private": true,
+  "devDependencies": {
+    "playwright": "^1.65.1"
+  }
+}

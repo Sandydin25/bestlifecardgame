@@ -45,7 +45,9 @@
     const set = (id, n) => (document.getElementById(id).textContent = (n || 0).toLocaleString());
     async function load() {
       try {
-        const s = (await (await fetch(window.BL_FIREBASE.databaseURL + '/stats.json', { cache: 'no-store' })).json()) || {};
+        const res = await fetch(window.BL_FIREBASE.databaseURL + '/stats.json', { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status); // keep the last numbers on screen instead of showing zeros
+        const s = (await res.json()) || {};
         set('played', (s.soloGamesStarted || 0) + (s.onlineGamesStarted || 0));
         set('visits', s.visits);
         set('solo', s.soloGamesStarted);
@@ -55,7 +57,7 @@
         set('joins', s.onlineJoins);
         document.getElementById('upd').textContent = 'Last checked ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + '.';
       } catch (e) {
-        document.getElementById('upd').textContent = 'Couldn’t load the counts right now.';
+        document.getElementById('upd').textContent = 'Couldn’t refresh the counts just now. Trying again in 30 seconds.';
       }
     }
     load();
