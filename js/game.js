@@ -57,7 +57,8 @@
   /* ---------- layout / render ---------- */
   function sizeCards() {
     const bw = board.clientWidth;
-    const gw = Math.round(Math.max(50, Math.min(98, bw / 10.5)));
+    // bigger cards when the board is full screen on a phone (lots of vertical room)
+    const gw = Math.round(Math.max(50, Math.min(98, bw / (BL.fs && BL.fs.on && bw < 700 ? 6.2 : 10.5))));
     board.style.setProperty('--gw', gw + 'px');
     // your hand: shrink cards if even maximum overlap would not fit
     const n = G ? G.hands[0].length : 7, groups = G ? groupsOf(0) : 1;
@@ -338,6 +339,8 @@
   async function start(e) {
     if (starting) return;
     starting = true;
+    BL.stats.hit('soloGamesStarted');
+    if (e && e.isTrusted !== false) BL.fs.enter();
     kbd = !!e && e.detail === 0;
     const id = ++gameId;
     newGame();
@@ -360,6 +363,7 @@
   }
 
   function finish() {
+    BL.stats.hit('soloGamesFinished');
     G.busy = true;
     render();
     const a = G.won[0].length, b = G.won[1].length;
@@ -371,7 +375,7 @@
   }
 
   /* ---------- confetti ---------- */
-  function confetti(s, n) {
+  function confetti(s, n, around) {
     if (reduce) return;
     const cv = document.createElement('canvas');
     cv.className = 'confetti';
@@ -381,7 +385,7 @@
     const ctx = cv.getContext('2d');
     ctx.scale(devicePixelRatio, devicePixelRatio);
     const cols = [s.bg, '#ffe31a', '#ffffff', s.title, '#f37a1f'];
-    const r = board.getBoundingClientRect();
+    const r = (around || board).getBoundingClientRect();
     const P = Array.from({ length: n }, () => ({
       x: r.left + r.width / 2 + (Math.random() - 0.5) * 120, y: r.top + r.height * 0.45,
       vx: (Math.random() - 0.5) * 12, vy: -6 - Math.random() * 10, s: 5 + Math.random() * 6,
@@ -402,6 +406,96 @@
   if (SPEED < 1) window.__BLtest = { render: () => render(), elFor };
   $('#startBtn').addEventListener('click', start);
   $('#againBtn').addEventListener('click', start);
+  BL.confetti = confetti;
+
+  /* ---------- full-screen play + boards + online ---------- */
+  const stage = $('#playStage'), oboard = $('#oboard');
+  const canNativeFS = !!(document.fullscreenEnabled && stage.requestFullscreen);
+  BL.fs = {
+    on: false,
+    enter() {
+      if (BL.fs.on) return;
+      BL.fs.on = true;
+      stage.classList.add('fs');
+      document.documentElement.classList.add('fs-lock');
+      if (canNativeFS && !document.fullscreenElement) stage.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
+      setTimeout(() => { addEventListener('resize', fit); fit(); }, 60);
+    },
+    exit() {
+      if (!BL.fs.on) return;
+      BL.fs.on = false;
+      stage.classList.remove('fs');
+      document.documentElement.classList.remove('fs-lock');
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      removeEventListener('resize', fit);
+      setTimeout(fit, 60);
+      stage.scrollIntoView({ block: 'center' });
+    },
+  };
+  function fit() { if (G) sizeCards(); dispatchEvent(new Event('bl-fit')); }
+  document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && BL.fs.on) BL.fs.exit(); });
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && BL.fs.on && !document.fullscreenElement) BL.fs.exit(); });
+  $('#fsBtn').addEventListener('click', () => BL.fs.enter());
+  $('#fsExit').addEventListener('click', () => BL.fs.exit());
+
+  BL.showBoard = (which) => {
+    const online = which === 'online';
+    oboard.hidden = !online;
+    board.hidden = online;
+    stage.classList.toggle('is-online', online);
+  };
+  BL.playMenu = () => {
+    BL.showBoard('solo');
+    endScreen.classList.remove('on');
+    startScreen.classList.add('on');
+    (startScreen.querySelector('button') || board).focus({ preventScroll: true });
+  };
+  $('#menuBtn').addEventListener('click', () => BL.playMenu());
+
+  let onlineP = null;
+  BL.loadOnline = () => {
+    if (BL.online) return Promise.resolve(BL.online);
+    if (!onlineP) {
+      onlineP = new Promise((res, rej) => {
+        const sc = document.createElement('script');
+        sc.src = 'js/online.js';
+        sc.onload = () => (BL.online ? res(BL.online) : rej(new Error('online failed')));
+        sc.onerror = () => { onlineP = null; rej(new Error('Couldn’t load online play. Check your connection.')); };
+        document.body.append(sc);
+      });
+    }
+    return onlineP;
+  };
+  async function openOnline(kind, code) {
+    if (!window.BL_FIREBASE) {
+      BL.showBoard('solo');
+      startScreen.classList.add('on');
+      const m = startScreen.querySelector('.menu-card:last-child p');
+      if (m) m.textContent = 'Online play is almost ready. Check back soon!';
+      return;
+    }
+    BL.showBoard('online');
+    BL.fs.enter();
+    try {
+      const o = await BL.loadOnline();
+      kind === 'join' ? o.openJoin(code) : o.openCreate();
+    } catch (err) {
+      $('#oLobby').innerHTML = `<div class="o-panel"><h3>Hmm…</h3><p>${err.message}</p><button class="btn btn-y" type="button" id="oBackErr">Back</button></div>`;
+      $('#oLobby').classList.add('on');
+      $('#oBackErr').addEventListener('click', () => BL.playMenu());
+    }
+  }
+  $('#createBtn').addEventListener('click', () => openOnline('create'));
+  $('#joinBtn').addEventListener('click', () => openOnline('join'));
+  $('#oLeave').addEventListener('click', () => { if (BL.online) BL.online.leave(); BL.playMenu(); });
+  // invite links: bestlifecardgame.us/?join=ABCD
+  const joinCode = (new URLSearchParams(location.search).get('join') || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
+  if (joinCode.length === 4) {
+    addEventListener('load', () => {
+      document.getElementById('play').scrollIntoView({ behavior: 'auto' });
+      openOnline('join', joinCode);
+    });
+  }
   addEventListener('resize', () => G && sizeCards());
   board.style.setProperty('--gw', '82px');
 })();

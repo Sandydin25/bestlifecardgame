@@ -37,6 +37,7 @@
   /*  SETS GALLERY                                                      */
   /* ================================================================== */
   const grid = $('#setGrid');
+  let timers = [], shuffling = false;
   const order = ['money', 'food', 'family', 'friends', 'goals', 'health', 'humor', 'education', 'knowledge', 'belief', 'freedom', 'grit'];
   const slots = order.map((id) => {
     const s = BL.set(id);
@@ -45,10 +46,25 @@
     c.tabIndex = 0;
     c.setAttribute('role', 'button');
     c.append(BL.el('div', 'glare'));
-    const lab = BL.el('div', 'slot-label', `<i style="--c:${s.bg}"></i>${s.name}`);
+    const lab = BL.el('div', 'slot-label', `<i style="--c:${s.bg}"></i>${s.name}<span class="qn">1 of 4</span>`);
     slot.append(c, lab);
     grid.append(slot);
-    const flip = () => c.classList.toggle('flipped');
+    // tap: the card flips over and comes back showing the set's next Connecting Point
+    let qi = 0, busy = false;
+    const flip = async () => {
+      if (busy || shuffling) return;
+      if (c.classList.contains('flipped')) { c.classList.remove('flipped'); return; }
+      busy = true;
+      c.classList.add('flipped');
+      await sleep(430);
+      qi = (qi + 1) % s.quotes.length;
+      c.querySelector('.f-cp p').textContent = s.quotes[qi];
+      lab.querySelector('.qn').textContent = `${qi + 1} of 4`;
+      c.setAttribute('aria-label', `${s.name} card ${qi + 1} of 4: ${s.quotes[qi]}`);
+      c.classList.remove('flipped');
+      await sleep(500);
+      busy = false;
+    };
     c.addEventListener('click', flip);
     c.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } });
     if (!reduce) {
@@ -64,6 +80,19 @@
       c.addEventListener('pointerleave', () => { c.style.transition = ''; c.style.transform = ''; });
     }
     return slot;
+  });
+
+  const actionRow = $('#actionRow');
+  BL.ACTIONS.forEach((a) => {
+    const slot = BL.el('div', 'slot');
+    const c = BL.actionCard(a.id);
+    c.tabIndex = 0;
+    c.setAttribute('role', 'button');
+    const flip = () => c.classList.toggle('flipped');
+    c.addEventListener('click', flip);
+    c.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } });
+    slot.append(c, BL.el('div', 'slot-label', `<i style="--c:#d93a2e"></i>Action card <span class="qn">× ${a.count}</span>`));
+    actionRow.append(slot);
   });
 
   // deal-in animation when the grid first appears
@@ -84,7 +113,6 @@
     });
   }, { threshold: 0.12 }).observe(grid);
 
-  let timers = [], shuffling = false;
   const clearTimers = () => { timers.forEach(clearTimeout); timers = []; };
   const stagger = (fn, i, ms) => timers.push(setTimeout(fn, i * ms));
   $('#flipAllBtn').addEventListener('click', () => {
@@ -133,19 +161,19 @@
   const drawn = $('#wisDrawn');
   const quoteEl = $('#wisQuote');
   let bag = [], drawnCount = 0, drawing = false;
-  const SAYINGS = BL.SETS.filter((s) => !s.placeholder);
+  const SAYINGS = BL.SETS.flatMap((s) => s.quotes.map((q) => ({ id: s.id, q })));
   const refill = () => {
-    bag = SAYINGS.map((s) => s.id);
+    bag = SAYINGS.slice();
     for (let i = bag.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [bag[i], bag[j]] = [bag[j], bag[i]]; }
   };
   async function draw() {
     if (drawing) return;
     drawing = true;
     if (!bag.length) refill();
-    const id = bag.pop();
+    const pick = bag.pop(), id = pick.id;
     const s = BL.set(id);
     drawnCount++;
-    const c = BL.card(id, { cls: 'down' });
+    const c = BL.card(id, { cls: 'down', quote: pick.q });
     drawn.append(c);
     const dr = deckBtn.getBoundingClientRect(), wr = drawn.getBoundingClientRect();
     const rot = (Math.random() - 0.5) * 10;
@@ -163,7 +191,7 @@
     // quote
     quoteEl.classList.remove('on');
     await sleep(280);
-    quoteEl.innerHTML = s.quote.split(' ').map((w, i) => `<span class="w" style="transition-delay:${i * 45}ms">${w}</span>`).join(' ');
+    quoteEl.innerHTML = pick.q.split(' ').map((w, i) => `<span class="w" style="transition-delay:${i * 45}ms">${w}</span>`).join(' ');
     $('#wisTagImg').src = BL.iconURI(s.icon);
     $('#wisTagName').textContent = s.name;
     $('#wisTag').style.background = s.bg;
@@ -221,7 +249,7 @@
     });
     for (let i = 0; i < 4; i++) {
       const stk = BL.el('div', 'stk act');
-      stk.append(BL.flatBack());
+      stk.append(BL.flatAction(i < 2 ? 'turn' : 'take2'));
       stk.style.transitionDelay = (12 + i) * 55 + 'ms';
       anat.append(stk);
     }

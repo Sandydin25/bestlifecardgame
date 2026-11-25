@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Best Life — Game Stats</title>
+  <link rel="icon" href="img/icon-180.png">
+  <link rel="stylesheet" href="fonts.css">
+  <style>
+    :root { --yellow: #ffe31a; --ink: #1d1c4d; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; padding: 28px 16px 40px; background: radial-gradient(120% 90% at 50% 0%, #4a4ca6, #26277a 55%, #191a55); color: #fff; font: 500 16px/1.5 Archivo, system-ui, sans-serif; }
+    main { max-width: 760px; margin: 0 auto; }
+    h1 { margin: 0; color: var(--yellow); font: 400 clamp(44px, 10vw, 76px)/.95 Anton, Impact, sans-serif; text-transform: uppercase; text-shadow: 3px 4px 0 rgba(0,0,0,.3); }
+    .sub { margin: 8px 0 26px; color: rgba(255,255,255,.75); font-weight: 600; }
+    .big { display: flex; align-items: center; gap: 18px; margin-bottom: 14px; padding: 22px; border-radius: 22px; background: var(--yellow); color: var(--ink); }
+    .big b { font: 400 clamp(64px, 16vw, 110px)/1 Anton, Impact, sans-serif; }
+    .big span { font: 800 18px/1.2 Archivo, sans-serif; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+    .tile { padding: 16px; border-radius: 16px; background: rgba(255,255,255,.1); }
+    .tile b { display: block; color: var(--yellow); font: 400 44px/1 Anton, Impact, sans-serif; }
+    .tile span { color: rgba(255,255,255,.85); font-size: 14px; font-weight: 700; }
+    .foot { margin-top: 22px; color: rgba(255,255,255,.6); font-size: 13px; }
+    a { color: var(--yellow); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Game stats</h1>
+    <p class="sub">Live counts for bestlifecardgame.us. Updates on its own. <span id="upd"></span></p>
+    <div class="big"><b id="played">–</b><span>games played<br>on the website</span></div>
+    <div class="grid">
+      <div class="tile"><b id="visits">–</b><span>visits</span></div>
+      <div class="tile"><b id="solo">–</b><span>games vs Smiley</span></div>
+      <div class="tile"><b id="online">–</b><span>family games online</span></div>
+      <div class="tile"><b id="finished">–</b><span>games played to the end</span></div>
+      <div class="tile"><b id="rooms">–</b><span>join codes created</span></div>
+      <div class="tile"><b id="joins">–</b><span>players who joined with a code</span></div>
+    </div>
+    <p class="foot">Anonymous counts only: no names or personal info are stored. <a href="./">Back to the game</a></p>
+  </main>
+  <script src="js/config.js"></script>
+  <script>
+    const set = (id, n) => (document.getElementById(id).textContent = (n || 0).toLocaleString());
+    async function load() {
+      try {
+        const s = (await (await fetch(window.BL_FIREBASE.databaseURL + '/stats.json', { cache: 'no-store' })).json()) || {};
+        set('played', (s.soloGamesStarted || 0) + (s.onlineGamesStarted || 0));
+        set('visits', s.visits);
+        set('solo', s.soloGamesStarted);
+        set('online', s.onlineGamesStarted);
+        set('finished', (s.soloGamesFinished || 0) + (s.onlineGamesFinished || 0));
+        set('rooms', s.onlineRooms);
+        set('joins', s.onlineJoins);
+        document.getElementById('upd').textContent = 'Last checked ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + '.';
+      } catch (e) {
+        document.getElementById('upd').textContent = 'Couldn’t load the counts right now.';
+      }
+    }
+    load();
+    setInterval(load, 30000);
+  </script>
+</body>
+</html>

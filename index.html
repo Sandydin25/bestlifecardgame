@@ -83,19 +83,29 @@
     </div>
   </section>
 
+  <!-- ============================ QUOTE ============================ -->
+  <section class="quote-band" aria-label="Every family should play this game">
+    <div class="qb-in reveal">
+      <span class="qb-stars" aria-hidden="true"><img src="" data-icon="heart" alt=""><img src="" data-icon="hugface" alt=""><img src="" data-icon="grin" alt=""></span>
+      <p class="qb"><span class="qm">“</span>Every family should play this game.<span class="qm">”</span></p>
+    </div>
+  </section>
+
   <!-- ============================ SETS ============================ -->
   <section class="sec sets" id="sets">
     <div class="sec-head reveal">
       <div class="kicker">The Cards</div>
       <h2 class="display">Twelve sets of <em>life’s best</em> stuff</h2>
-      <p>From Money and Food to Family and Friends: each set has four cards, and each card carries its own Connecting Point. Tap a card to flip it over.</p>
+      <p>From Money and Food to Family and Friends: each set has four cards, and every card carries its own Connecting Point. Tap a card to see all four.</p>
     </div>
     <div class="grid-tools reveal">
       <button class="btn btn-ink" id="shuffleBtn" type="button">Shuffle</button>
       <button class="btn btn-ink" id="flipAllBtn" type="button">Flip all</button>
     </div>
     <div class="set-grid" id="setGrid"></div>
-    <p class="grid-note">Tap any card to flip it &middot; one Connecting Point shown per set (each set has four)</p>
+    <p class="grid-note">Tap any card to see its set’s next Connecting Point &middot; 48 in all</p>
+    <div class="action-head reveal"><h3 class="display">Plus 4 Action cards</h3><p>Two of each, mixed into the deck.</p></div>
+    <div class="set-grid action-row" id="actionRow"></div>
   </section>
 
   <!-- ============================ WISDOM ============================ -->
@@ -103,7 +113,7 @@
     <div class="sec-head reveal">
       <div class="kicker">Connecting Points</div>
       <h2 class="display yl">A little wit &amp; wisdom</h2>
-      <p>Every card has a saying on it. The rules put it best: <i>“Read Connecting Points only for wit and wisdom.”</i> Draw one below.</p>
+      <p>All 48 Best Life cards have a saying on them. The rules put it best: <i>“Read Connecting Points only for wit and wisdom.”</i> Draw one below.</p>
     </div>
     <div class="wis reveal">
       <div class="wis-table">
@@ -127,12 +137,12 @@
         <div class="cr-card" aria-hidden="true">
           <div class="cr-bg"></div>
           <img class="cr-ico" src="" data-icon="medal" alt="">
-          <div class="cr-band"><span>SANDY</span></div>
-          <div class="cr-photo"><img src="img/sandy.jpg" alt="" width="548" height="800" loading="lazy" decoding="async"></div>
+          <div class="cr-band"><span class="two">SANDY &amp; DOROTHY</span></div>
+          <div class="cr-photo"><img src="img/sandy-dorothy.jpg" alt="" width="900" height="727" loading="lazy" decoding="async"></div>
           <div class="cr-cp"><small>Connecting Point</small><p>“It’s part luck and part skill.”</p></div>
           <div class="f-sheen"></div>
         </div>
-        <figcaption>Sandy F. Kraemer, creator of Best Life</figcaption>
+        <figcaption>Sandy F. Kraemer, creator of Best Life, dancing with his wife, Dorothy</figcaption>
       </figure>
       <div class="cr-text reveal">
         <div class="kicker">Meet the Creator</div>
@@ -198,48 +208,81 @@
     <div class="sec-head reveal">
       <div class="kicker">Play a Round</div>
       <h2 class="display yl">Help me with…</h2>
-      <p>A quick two-player round against Smiley. Ask for a set you’re holding. If Smiley has any, they hand them over. If not, it’s off to the Help Stack.</p>
-      <p class="note">A simplified, Go Fish–style taste of the game: 48 Best Life cards, no Action cards. The full rules come in the box!</p>
+      <p>Play a quick round against Smiley, or start a game with family, each on your own phone, with a join code.</p>
+      <p class="note">A simplified, Go Fish–style version of the game: 48 Best Life cards, no Action cards. The full rules come in the box!</p>
     </div>
-    <div class="board" id="board">
-      <div class="seat them">
-        <div class="who-tag" id="tagThem"><div class="av"><img src="" data-icon="grin" alt=""></div><div><b>Smiley</b><small id="themInfo">7 cards</small></div></div>
-        <div class="hand theirs" id="handThem"></div>
+    <div class="play-stage" id="playStage">
+      <div class="stage-bar">
+        <button class="fs-btn" id="fsBtn" type="button"><span aria-hidden="true">⤢</span> Full screen</button>
+        <button class="fs-btn fs-exit" id="fsExit" type="button"><span aria-hidden="true">✕</span> Exit full screen</button>
       </div>
-      <div class="mid">
-        <div class="pile-wrap" id="pileWrap">
-          <div class="pile" id="pile"></div>
-          <div class="pile-lbl"><b id="pileCount">34</b>Help Stack</div>
+      <div class="board" id="board">
+        <div class="seat them">
+          <div class="who-tag" id="tagThem"><div class="av"><img src="" data-icon="grin" alt=""></div><div><b>Smiley</b><small id="themInfo">7 cards</small></div></div>
+          <div class="hand theirs" id="handThem"></div>
         </div>
-        <div class="msg" id="msg" aria-live="polite">Pick a set to ask for.</div>
-        <div class="side-col r">
-          <span class="t">Smiley’s sets</span><div class="sets-won" id="setsThem"></div>
-          <span class="t" style="margin-top:10px">Your sets</span><div class="sets-won" id="setsYou"></div>
+        <div class="mid">
+          <div class="pile-wrap" id="pileWrap">
+            <div class="pile" id="pile"></div>
+            <div class="pile-lbl"><b id="pileCount">34</b>Help Stack</div>
+          </div>
+          <div class="msg" id="msg" aria-live="polite">Pick a set to ask for.</div>
+          <div class="side-col r">
+            <span class="t">Smiley’s sets</span><div class="sets-won" id="setsThem"></div>
+            <span class="t" style="margin-top:10px">Your sets</span><div class="sets-won" id="setsYou"></div>
+          </div>
+        </div>
+        <div class="seat you">
+          <div class="who-tag" id="tagYou"><div class="av"><img src="" data-icon="hugface" alt=""></div><div><b>You</b><small id="youInfo">7 cards</small></div></div>
+          <div class="ask-bar" id="askBar"></div>
+          <div class="hand mine" id="handYou"></div>
+        </div>
+        <div class="end-screen start-screen on" id="startScreen">
+          <div class="menu">
+            <h3>Let’s play!</h3>
+            <div class="menu-grid">
+              <div class="menu-card">
+                <img src="" data-icon="grin" alt="">
+                <h4>Play vs Smiley</h4>
+                <p>A quick round against the computer, right here.</p>
+                <button class="btn btn-y" id="startBtn" type="button">Deal me in</button>
+              </div>
+              <div class="menu-card">
+                <img src="" data-icon="hugface" alt="">
+                <h4>Play with family</h4>
+                <p>2 to 6 players, each on their own phone. Share a join code.</p>
+                <button class="btn btn-y" id="createBtn" type="button">Start a game</button>
+                <button class="btn btn-ghost" id="joinBtn" type="button">Join with a code</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="end-screen" id="endScreen">
+          <div>
+            <h3 id="endTitle">You win!</h3>
+            <p id="endText"></p>
+            <button class="btn btn-y" id="againBtn" type="button">Play again</button>
+            <button class="o-link" id="menuBtn" type="button">Back to menu</button>
+          </div>
         </div>
       </div>
-      <div class="seat you">
-        <div class="who-tag" id="tagYou"><div class="av"><img src="" data-icon="hugface" alt=""></div><div><b>You</b><small id="youInfo">7 cards</small></div></div>
-        <div class="ask-bar" id="askBar"></div>
-        <div class="hand mine" id="handYou"></div>
-      </div>
-      <div class="end-screen start-screen on" id="startScreen">
-        <div>
-          <h3>Ready?</h3>
-          <ul class="rules-mini">
-            <li>You and Smiley each get 7 cards.</li>
-            <li>On your turn, say <b>“Help me with…”</b> and name a set you hold.</li>
-            <li>If Smiley has any, you get them all <i>and</i> go again. If not, draw from the Help Stack.</li>
-            <li>Four of a kind wins the set. Most sets wins the game!</li>
-          </ul>
-          <button class="btn btn-y" id="startBtn" type="button">Deal me in</button>
+      <div class="board oboard" id="oboard" hidden>
+        <div class="o-top">
+          <div class="o-bar"><span class="o-code" id="oCode"></span><button class="o-leave" id="oLeave" type="button">Leave game</button></div>
+          <div class="o-opps" id="oOpps"></div>
         </div>
-      </div>
-      <div class="end-screen" id="endScreen">
-        <div>
-          <h3 id="endTitle">You win!</h3>
-          <p id="endText"></p>
-          <button class="btn btn-y" id="againBtn" type="button">Play again</button>
+        <div class="mid">
+          <div class="pile-wrap" id="oPileWrap"><div class="pile" id="oPile"></div><div class="pile-lbl"><b id="oPileCount">0</b>Help Stack</div></div>
+          <div class="msg" id="oMsg" aria-live="polite"></div>
+          <div class="side-col r"><span class="t">Your sets</span><div class="sets-won" id="oSetsMe"></div></div>
         </div>
+        <div class="seat you">
+          <div class="who-tag" id="oTagMe"><div class="av"><img id="oMeAv" src="" alt=""></div><div><b id="oMeName">You</b><small id="oMeInfo"></small></div></div>
+          <div class="ask-bar" id="oAskBar"></div>
+          <div class="hand mine" id="oHand"></div>
+        </div>
+        <div class="end-screen" id="oLobby"></div>
+        <div class="end-screen" id="oEnd"></div>
       </div>
     </div>
   </section>
@@ -254,7 +297,10 @@
   <p class="legal"><b>Best Selling Games</b> &middot; Gold Edition &middot; 52 Playing Cards + 48 Connecting Points<br>&copy; 2026 SFK and Associates LLC &middot; BEST LIFE&trade;</p>
 </footer>
 
+<script src="js/config.js"></script>
 <script src="js/art.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/engine.js"></script>
 <script src="js/main.js"></script>
 <script src="js/game.js"></script>
 <script src="js/hero3d.js"></script>

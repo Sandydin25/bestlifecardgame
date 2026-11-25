@@ -27,9 +27,9 @@
     { id: 'belief', name: 'BELIEF', icon: 'mountain', pattern: 'clouds',
       bg: '#83b5e2', bg2: '#9cc6ec', title: '#2a2971', shade: '#24456c', fs: 12.4, ls: 0.04,
       quote: 'Sorrow looks back, worry looks around, belief looks forward.' },
-    { id: 'food', name: 'FOOD', icon: 'apple', pattern: 'pinstripe',
-      bg: '#4d6699', bg2: '#8ea6c6', title: '#8a2a1d', shade: '#141d38', fs: 12.6, ls: 0.17,
-      quote: 'An apple a day keeps the doctor away.', placeholder: true }, // PLACEHOLDER: the real FOOD saying isn't readable in the photos
+    { id: 'food', name: 'FOOD', icon: 'apple', pattern: 'waves',
+      bg: '#3f63b0', bg2: '#8fd0ea', title: '#a32d27', shade: '#1b2f5c', fs: 12.6, ls: 0.17,
+      quote: 'Chocolate is salad. It comes from a tree, which is a plant.' },
     { id: 'freedom', name: 'FREEDOM', icon: 'bell', pattern: 'zigzag',
       bg: '#2f3597', bg2: '#3a41a8', title: '#2b2973', shade: '#0d0f44', fs: 12.2, ls: 0.01,
       quote: 'Freedom is the right to think for yourself… ALOUD.' },
@@ -45,6 +45,27 @@
     { id: 'grit', name: 'GRIT', icon: 'bolt', pattern: 'triangles',
       bg: '#b4174c', bg2: '#c22058', title: '#9c1a22', shade: '#560818', fs: 13, ls: 0.15,
       quote: 'Life is short and it’s up to you to make it sweet.' },
+  ];
+  // Every Connecting Point in the deck (4 per set), transcribed from the printed cards.
+  const QUOTES = {
+    goals: ['A goal without a plan is a wish.', 'You cannot change your life without changing your thinking.', 'Every problem includes an opportunity.', 'Do the best you can, and don’t take yourself too seriously.'],
+    humor: ['Laugh loudly, laugh often, laugh at yourself.', 'I named my dog Five Miles, so I tell people I walk Five Miles daily.', 'Humor is like a summer rain, it renews.', 'Laughter is like a windshield wiper, it helps you keep going.'],
+    education: ['Education costs money but ignorance can cost more.', 'As long as there are tests there will be prayer in school.', 'Facts don’t change minds. A good story will.', 'Education is something you always have in your pocket.'],
+    health: ['Good health and good sense are two of life’s greatest blessings.', 'The greatest gift you can give is a healthy you.', 'Someone who can’t stick with a diet is a deserter.', 'A good laugh and a good sleep are the best cure.'],
+    money: ['Beware of little expenses. A small leak can sink a great ship.', 'Put your money in the freezer if you want cold cash.', 'When prosperity comes, do not use all of it.', 'Wisdom plays a major role in managing money.'],
+    belief: ['Sorrow looks back, worry looks around, belief looks forward.', 'Belief is not what you have. It is what you think.', 'Belief moves mountains, but you have to keep pushing.', 'Belief is not a feeling. It is courage in spite of feelings.'],
+    food: ['Chocolate is salad. It comes from a tree, which is a plant.', 'Food is culture, habit and identity.', 'A balanced diet means a cookie in each hand.', 'Let food be the medicine and the medicine be the food.'],
+    freedom: ['Freedom is the right to think for yourself… ALOUD.', 'Every day is a new adventure if you are free.', 'Freedom and responsibility go together.', 'Never be limited by other people’s limitations.'],
+    family: ['Family love lasts forever.', 'Family means nobody is left behind or forgotten.', 'Family stories are often telling.', 'Other things may change, but we start and end with family.'],
+    knowledge: ['We have too much information and not enough knowledge.', 'Knowledge is like money. To be of value, it needs to be circulated.', 'Everybody is ignorant, only on different subjects.', 'Knowledge speaks. Wisdom listens.'],
+    friends: ['Things are never quite so bad when you’ve got a best friend.', 'Friends will change your life.', 'There’s nothing better than a friend, unless it’s a friend with chocolate.', 'Friends don’t care if you can’t dance well. Just dance!'],
+    grit: ['Life is short and it’s up to you to make it sweet.', 'Winning does not mean always being first.', 'The scariest moment is just before you start.', 'Mistakes are proof that you are trying.'],
+  };
+  SETS.forEach((s) => { s.quotes = QUOTES[s.id]; s.quote = s.quotes[0]; });
+  // The 4 Action cards (2 of each)
+  BL.ACTIONS = [
+    { id: 'turn', icon: 'point', text: 'Take Another Turn', count: 2 },
+    { id: 'take2', icon: 'thumbs', text: 'Take 2 Cards From Any Player', count: 2 },
   ];
   const BY_ID = Object.fromEntries(SETS.map((s) => [s.id, s]));
   BL.SETS = SETS;
@@ -226,6 +247,22 @@
       <path d="M47 23 C42 15 33 14 30 16 C34 23 41 25 47 23 Z" fill="#4c9e2e" stroke="#2c6a18" stroke-width="1.4"/>
       <ellipse cx="31" cy="46" rx="5" ry="10" fill="#fff" opacity=".4" transform="rotate(20 31 46)"/>`),
   };
+  const HAND = `<defs><linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd35a"/><stop offset="1" stop-color="#f2a226"/></linearGradient></defs>`;
+  const HS = 'fill="url(#hg)" stroke="#b86e12" stroke-width="2.2" stroke-linejoin="round"';
+  ICONS.point = svg('0 0 100 100', HAND + `
+      <path d="M8 46 C8 40 12 38 18 38 L56 38 C58 34 62 32 70 32 L91 32 C96 32 98 36 98 40 C98 44 96 47 91 47 L66 47 L66 50 Z" ${HS}/>
+      <rect x="22" y="40" width="48" height="46" rx="15" ${HS}/>
+      <path d="M30 40 C26 30 32 22 40 26 L52 38" ${HS}/>
+      <path d="M40 56 C50 54 60 54 68 56 M38 67 C48 65 58 65 67 67 M40 78 C48 76 56 76 64 77" stroke="#b86e12" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <ellipse cx="80" cy="36" rx="9" ry="2.6" fill="#fff" opacity=".45"/>`);
+  ICONS.thumbs = svg('0 0 100 100', HAND + `
+      <path d="M38 50 L38 18 C38 8 52 6 54 16 L56 50 Z" ${HS}/>
+      <rect x="26" y="44" width="40" height="50" rx="14" ${HS}/>
+      <rect x="52" y="44" width="28" height="13" rx="6.5" ${HS}/>
+      <rect x="52" y="57" width="28" height="13" rx="6.5" ${HS}/>
+      <rect x="52" y="70" width="27" height="12" rx="6" ${HS}/>
+      <rect x="51" y="82" width="25" height="11" rx="5.5" ${HS}/>
+      <ellipse cx="44" cy="18" rx="3" ry="7" fill="#fff" opacity=".45"/>`);
   BL.icon = (name) => ICONS[name];
   const ICON_URI = {};
   for (const k in ICONS) ICON_URI[k] = uri(ICONS[k]);
@@ -323,6 +360,21 @@
       const at = [[10, 6, 4], [44, 8, 3], [78, 4, 4.5], [94, 22, 3], [6, 34, 4], [92, 46, 4.5], [8, 64, 3.5], [30, 84, 4], [86, 76, 3], [62, 94, 3.5], [12, 104, 4.5], [90, 102, 4], [40, 126, 4], [72, 130, 3], [8, 132, 3]];
       return at.map(([x, y, rr]) => `<polygon points="${star(x, y, rr * 1.3)}" fill="#ee8329" opacity=".85"/>`).join('');
     },
+    waves(s) {
+      // wavy vertical stripes, like the printed FOOD card
+      let out = '';
+      const band = (x0, w, amp, ph) => {
+        const L = [], R = [];
+        for (let y = -6; y <= 146; y += 6) { const dx = Math.sin(y / 14 + ph) * amp; L.push(f2(x0 + dx) + ',' + y); R.unshift(f2(x0 + w + dx) + ',' + y); }
+        return L.concat(R).join(' ');
+      };
+      for (let k = 0; k < 8; k++) {
+        const x = -8 + k * 15;
+        out += `<polygon points="${band(x, 7, 3, k * 0.7)}" fill="#ffffff" opacity=".13"/>`;
+        out += `<polyline points="${band(x + 10, 0, 3, k * 0.7 + 0.4).split(' ').slice(0, 26).join(' ')}" fill="none" stroke="#6ee0e6" stroke-width="1.2" opacity=".45"/>`;
+      }
+      return out;
+    },
     pinstripe(s) {
       let out = '';
       for (let x = 0; x < 100; x += 12) out += `<rect x="${x}" y="0" width="6" height="140" fill="#fff" opacity=".07"/>`;
@@ -335,7 +387,7 @@
   for (const s of SETS) {
     const grad = `<defs><radialGradient id="v" cx=".5" cy=".42" r=".75"><stop offset="0" stop-color="${s.bg2}"/><stop offset="1" stop-color="${s.bg}"/></radialGradient>
       <linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${s.bg}"/><stop offset="1" stop-color="${s.bg2}"/></linearGradient></defs>`;
-    const fill = s.pattern === 'pinstripe' ? 'url(#lg)' : 'url(#v)';
+    const fill = s.pattern === 'pinstripe' || s.pattern === 'waves' ? 'url(#lg)' : 'url(#v)';
     BG_URI[s.id] = uri(svg('0 0 100 140', grad + `<rect width="100" height="140" fill="${fill}"/>` + PAT[s.pattern](s), 'preserveAspectRatio="none"'));
   }
 
@@ -357,13 +409,13 @@
   };
   BL.el = el;
 
-  function frontHTML(s, mini) {
+  function frontHTML(s, mini, quote) {
     const ico = ICON_URI[s.icon];
     return `<div class="f-bg"></div>
       <img class="f-ico-s ico-${s.icon}" src="${ico}" alt="" draggable="false">
       <div class="f-band"><span>${s.name}</span></div>
       <img class="f-ico-l ico-${s.icon}" src="${ico}" alt="" draggable="false">
-      ${mini ? '' : `<div class="f-cp"><small>Connecting Point</small><p>${s.quote}</p></div>`}
+      ${mini ? '' : `<div class="f-cp"><small>Connecting Point</small><p>${quote || s.quote}</p></div>`}
       <div class="f-sheen"></div>`;
   }
   function backHTML() {
@@ -384,13 +436,39 @@
     const c = el('div', 'card' + (opts.mini ? ' mini' : '') + (opts.cls ? ' ' + opts.cls : ''));
     c.dataset.set = setId;
     const inner = el('div', 'card-inner');
-    const front = el('div', 'face front set-' + s.id, frontHTML(s, opts.mini));
+    const front = el('div', 'face front set-' + s.id, frontHTML(s, opts.mini, opts.quote));
     const back = el('div', 'face back', backHTML());
     inner.append(front, back);
     c.append(inner);
-    if (opts.label !== false) c.setAttribute('aria-label', s.name + ' card: ' + s.quote);
+    if (opts.label !== false) c.setAttribute('aria-label', s.name + ' card: ' + (opts.quote || s.quote));
     return c;
   };
+  const ACTION_BG = uri(svg('0 0 100 140', `<defs><radialGradient id="r" cx=".5" cy=".45" r=".8"><stop offset="0" stop-color="#ec4a3b"/><stop offset="1" stop-color="#cf2f27"/></radialGradient></defs>
+    <rect width="100" height="140" fill="url(#r)"/>` + (() => {
+      const r = rng(9); let out = '';
+      for (let row = 0; row < 7; row++) for (let col = 0; col < 4; col++) {
+        const x = col * 30 + (row % 2 ? 15 : 0) + (r() - 0.5) * 8, y = row * 22 + (r() - 0.5) * 8;
+        out += `<polygon points="${star(x, y, 12 + r() * 4, -Math.PI / 2 + (r() - 0.5) * 0.6, 0.46)}" fill="none" stroke="#a91f1a" stroke-width="1.2" stroke-linejoin="round" opacity=".55"/>`;
+      }
+      return out;
+    })(), 'preserveAspectRatio="none"'));
+  function actionHTML(a) {
+    return `<div class="f-bg" style="background-image:url('${ACTION_BG}')"></div>
+      <div class="a-title">ACTION<br>CARD</div>
+      <img class="a-ico" src="${ICON_URI[a.icon]}" alt="" draggable="false">
+      <div class="a-text">${a.text.replace('Take 2 Cards ', 'Take 2 Cards<br>').replace('Take Another', 'Take<br>Another')}</div>
+      <div class="f-sheen"></div>`;
+  }
+  BL.actionCard = function (id, opts = {}) {
+    const a = BL.ACTIONS.find((x) => x.id === id);
+    const c = el('div', 'card action-card' + (opts.cls ? ' ' + opts.cls : ''));
+    const inner = el('div', 'card-inner');
+    inner.append(el('div', 'face front action', actionHTML(a)), el('div', 'face back', backHTML()));
+    c.append(inner);
+    c.setAttribute('aria-label', 'Action card: ' + a.text);
+    return c;
+  };
+  BL.flatAction = (id) => el('div', 'flatcard face front action', actionHTML(BL.ACTIONS.find((x) => x.id === id)));
   /** flat single face (no 3D), used inside the box art */
   BL.flatCard = function (setId, mini) {
     const s = BY_ID[setId];

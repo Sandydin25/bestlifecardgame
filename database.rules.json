@@ -1,0 +1,43 @@
+{
+  "rules": {
+    "stats": {
+      ".read": true,
+      "$key": {
+        ".write": "newData.exists() && $key.matches(/^(visits|soloGamesStarted|soloGamesFinished|onlineRooms|onlineJoins|onlineGamesStarted|onlineGamesFinished)$/)",
+        ".validate": "newData.isNumber() && newData.val() === (data.exists() ? data.val() : 0) + 1"
+      }
+    },
+    "codes": {
+      "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null && ((!data.exists() && newData.val() === auth.uid) || (data.val() === auth.uid && !newData.exists()))",
+        ".validate": "$code.matches(/^[A-Z]{4}$/)"
+      }
+    },
+    "rooms": {
+      "$code": {
+        ".write": "auth != null && root.child('codes').child($code).val() === auth.uid",
+        "meta": { ".read": "auth != null" },
+        "players": {
+          ".read": "auth != null",
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && root.child('codes').child($code).exists()",
+            "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 16" },
+            "online": { ".validate": "newData.isBoolean()" }
+          }
+        },
+        "state": { ".read": "auth != null" },
+        "hands": {
+          "$uid": { ".read": "auth != null && auth.uid === $uid" }
+        },
+        "secret": { ".read": "auth != null && root.child('codes').child($code).val() === auth.uid" },
+        "actions": {
+          ".read": "auth != null && root.child('codes').child($code).val() === auth.uid",
+          "$a": {
+            ".write": "auth != null && !data.exists() && newData.child('by').val() === auth.uid"
+          }
+        }
+      }
+    }
+  }
+}
