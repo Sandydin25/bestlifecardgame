@@ -237,15 +237,21 @@
              E  one player per device on a landscape phone: my end on the left
      ================================================================ */
   const EXT_X = 600, EXT_Y = 392; // board's visible half-size in units (frame + levers)
-  const CANVAS_X = 620, CANVAS_Y = 420; // drawn area (room for glows)
+  const CANVAS_X = 644, CANVAS_Y = 420; // drawn area (room for glows and compensated tabs)
   const FRAME_X = 544, FRAME_Y = 384;
+  const TRAY_X = 526, TRAY_Y = 366; // frame's inner opening / tray outer rim
+  const DROP_V = 90; // visual tray drop in board units at full corner press
+  const FRAME_DEP = 94; // outer frame wall depth in board units (deeper than DROP_V)
   const els = {
     stage: $('#stage'), table: $('#table'), pitch: $('#pitch'), spin: $('#spin'), board: $('#board'), shadow: $('#shadow'),
-    base: $('#cvBase'), live: $('#cvLive'), fx: $('#fx'), slot: $('#titleSlot'), flash: $('#flash'),
+    well: $('#well'), tray: $('#tray'), base: $('#cvBase'), live: $('#cvLive'), frame: $('#cvFrame'),
+    stems: [0, 1, 2, 3].map((c) => $(`.side-slot[data-c="${c}"] .slot-stem`)),
+    fx: $('#fx'), slot: $('#titleSlot'), flash: $('#flash'),
     zones: $('#zones'), pads: $('#pads'), hud: $('#hud'), count: $('#count'), banner: $('#banner'), toast: $('#toast'),
     badge: { r: $('#badge-r'), b: $('#badge-b') }, bug: $('#bug'), series: $('#series'), ready: $('#ready'), tips: $('#tips'), menuBtn: $('#menuBtn'), hudSound: $('#hudSound'), codeTag: $('#codeTag'),
   };
   let L = null; // current layout
+  let stemTravel = 0;
 
   function safeArea() {
     const cs = getComputedStyle($('#safe'));
@@ -280,6 +286,16 @@
       lay.pads.push({ c: cT, p, face, x: xc - w / 2, y: mid - gap / 2 - ph, w, h: ph });
       lay.pads.push({ c: cB, p, face, x: xc - w / 2, y: mid + gap / 2, w, h: ph });
     };
+    const distU = EXT_X * 2 * 2.1;
+    const pitchSpan = (pitch, rot) => {
+      const p = pitch * DEG, cp = Math.cos(p), sp = Math.sin(p);
+      const pv = (v0, z0) => { const vp = v0 * cp - z0 * sp, zp = v0 * sp + z0 * cp; return vp * distU / (distU - zp); };
+      const yTop = rot ? -(FRAME_X + 48) : -FRAME_Y;
+      const yBot = rot ? (FRAME_X + 48) : FRAME_Y;
+      const zBot = rot ? -(DROP_V + 10) : -FRAME_DEP;
+      return { vTop: pv(yTop, 0), vBot: pv(yBot, zBot) };
+    };
+    let flankD = false;
     if (view === 'O') {
       area = { x: sa.l + 10, y: sa.t + 10, w: vw - sa.l - sa.r - 20, h: vh - sa.t - sa.b - 20 };
       lay.pitch = 30;
@@ -317,10 +333,12 @@
       lay.bug = { x: vw / 2, y: sa.t + top };
       lay.btns = { menu: { x: sa.l + 26, y: sa.t + top }, sound: { x: vw - sa.r - 26, y: sa.t + top } };
       // wide screens: the board takes the full height and the two pads sit on either side of it
-      const full = { x: sa.l + 6, y: sa.t + top * 2 + 4, w: vw - sa.l - sa.r - 12, h: vh - sa.t - sa.b - top * 2 - 34 };
-      const S0 = Math.min(full.w / (EXT_Y * 2 * 1.12), full.h / (EXT_X * 2 * 0.98));
+      const sp = pitchSpan(lay.pitch, true);
+      const full = { x: sa.l + 6, y: sa.t + top * 2 + 10, w: vw - sa.l - sa.r - 12, h: vh - sa.t - sa.b - top * 2 - 26 };
+      const S0 = Math.min(full.w / (EXT_Y * 2 * 1.12), full.h / (sp.vBot - sp.vTop));
       const flank = (vw - 2 * (EXT_Y * S0 * 1.12 + 20)) / 2;
       if (vw >= vh * 1.15 && flank >= 200) {
+        flankD = true;
         area = full;
         const pw = Math.min(300, flank - 56), ph = Math.round(clamp(pw * 0.62, 120, 180)), py = vh - sa.b - 30 - ph;
         lay.pads.push({ c: H[0], p: me, face: 0, x: (flank - pw) / 2, y: py, w: pw, h: ph });
@@ -329,7 +347,7 @@
         const hp = clamp(vh * 0.15, 104, 150);
         gap = 12;
         strip(sa.l, vw - sa.r, vh - sa.b - hp / 2, hp, H[0], H[1], 0, me);
-        area = { x: sa.l + 6, y: sa.t + top * 2 + 6, w: vw - sa.l - sa.r - 12, h: vh - sa.t - sa.b - hp - top * 2 - 12 };
+        area = { x: sa.l + 6, y: sa.t + top * 2 + 6, w: vw - sa.l - sa.r - 12, h: vh - sa.t - sa.b - hp - top * 2 - 14 };
       }
       lay.cds = [{ x: vw / 2, y: area.y + area.h * 0.45, face: 0 }];
       lay.bans = [{ x: vw / 2, y: area.y + area.h * 0.45, face: 0, w: Math.min(vw * 0.9, 540) }];
@@ -346,12 +364,22 @@
       lay.bans = [{ x: area.x + area.w / 2, y: vh / 2, face: 0, w: Math.min(area.w * 0.96, 500) }];
     }
     // fit the board (rotated or not) into the area; a tilted-back view is wider at the near end
+    // and projects asymmetrically vertically (near pressed tabs drop further than far tabs rise)
     const rot = Math.abs(lay.theta) === 90;
     const ex = (rot ? EXT_Y : EXT_X) * 2, ey = (rot ? EXT_X : EXT_Y) * 2;
     const near = lay.pitch ? 1.12 : 1;
-    lay.S = Math.max(0.05, Math.min(area.w / (ex * near), area.h / (ey * (lay.pitch ? 0.98 : 1))));
-    lay.cx = area.x + area.w / 2;
-    lay.cy = area.y + area.h / 2 + (lay.pitch ? area.h * 0.02 : 0);
+    if (lay.pitch) {
+      const sp = pitchSpan(lay.pitch, rot);
+      const padTop = lay.view === 'D' && !flankD ? (vw < 700 ? 20 : 12) : 0;
+      const availH = Math.max(40, area.h - padTop);
+      lay.S = Math.max(0.05, Math.min(area.w / (ex * near), availH / (sp.vBot - sp.vTop)));
+      lay.cx = area.x + area.w / 2;
+      lay.cy = area.y + padTop + availH / 2 - ((sp.vTop + sp.vBot) / 2) * lay.S;
+    } else {
+      lay.S = Math.max(0.05, Math.min(area.w / ex, area.h / ey));
+      lay.cx = area.x + area.w / 2;
+      lay.cy = area.y + area.h / 2;
+    }
     lay.area = area;
     return lay;
   }
@@ -362,7 +390,7 @@
     L = computeLayout();
     // a different arrangement (the phone was turned): fingers that were down now sit over other levers, so let go
     if (old && old.view !== L.view && (touches.size || keys.size)) releaseAll();
-    lastBoardT = lastShadowT = ''; liveDirty = 30;
+    lastTrayT = ''; lastStemT.fill(''); liveDirty = 30;
     const S = L.S;
     const persp = Math.round(Math.max(EXT_X * 2 * S, 300) * 2.1);
     const t = els.table.style;
@@ -372,16 +400,33 @@
     els.spin.style.transform = `rotate(${L.theta}deg)`;
     const bw = CANVAS_X * 2 * S, bh = CANVAS_Y * 2 * S;
     Object.assign(els.board.style, { width: bw + 'px', height: bh + 'px', left: -bw / 2 + 'px', top: -bh / 2 + 'px' });
-    // frame sides (the depth you see when the board tilts)
-    const fx = (FRAME_X - 8) * S, fy = (FRAME_Y - 8) * S, dep = 40 * S, ox = bw / 2, oy = bh / 2;
+    // fixed outer frame walls (deeper than DROP_V + z0 so the sunken tray and well floor never clip)
+    const z0 = Math.max(2, 2.5 * S);
+    const fx = (FRAME_X - 8) * S, fy = (FRAME_Y - 8) * S, dep = FRAME_DEP * S + z0 + 3, ox = bw / 2, oy = bh / 2;
     const sides = $$('.side', els.board);
     Object.assign(sides[0].style, { left: ox - fx + 'px', top: oy - fy + 'px', width: 2 * fx + 'px', height: dep + 'px', transformOrigin: '50% 0', transform: 'rotateX(-90deg)' });
     Object.assign(sides[1].style, { left: ox - fx + 'px', top: oy + fy + 'px', width: 2 * fx + 'px', height: dep + 'px', transformOrigin: '50% 0', transform: 'rotateX(-90deg)' });
     Object.assign(sides[2].style, { left: ox - fx + 'px', top: oy - fy + 'px', width: dep + 'px', height: 2 * fy + 'px', transformOrigin: '0 50%', transform: 'rotateY(90deg)' });
     Object.assign(sides[3].style, { left: ox + fx + 'px', top: oy - fy + 'px', width: dep + 'px', height: 2 * fy + 'px', transformOrigin: '0 50%', transform: 'rotateY(90deg)' });
-    // the shadow is a soft gradient a bit bigger than the frame (no blur filter: those are slow inside a 3D scene)
+    // vertical lever slots in the two end walls (.side-w, .side-e): local x=0 is top rim, x=dep is bottom
+    const slLen = (FRAME_DEP - 8) * S, slH = 28 * S, stW = 10 * S, stH = 22 * S;
+    stemTravel = Math.max(0, slLen - stW - 3 * S);
+    for (let c = 0; c < 4; c++) {
+      const slot = els.stems[c].parentNode;
+      const sy = P.CORNERS[c][1];
+      Object.assign(slot.style, { left: 1 * S + 'px', top: fy + sy * 300 * S - slH / 2 + 'px', width: slLen + 'px', height: slH + 'px' });
+      Object.assign(els.stems[c].style, { left: 1.5 * S + 'px', top: (slH - stH) / 2 + 'px', width: stW + 'px', height: stH + 'px' });
+    }
+    // inner well: shaded inside of the fixed white plastic frame (visible in the gap when the tray sinks)
+    const wx = (TRAY_X + 1) * S, wy = (TRAY_Y + 1) * S;
+    Object.assign($('.well-f', els.well).style, { left: ox - wx + 'px', top: oy - wy + 'px', width: 2 * wx + 'px', height: 2 * wy + 'px', transform: `translateZ(${(-dep).toFixed(1)}px)` });
+    Object.assign($('.well-n', els.well).style, { left: ox - wx + 'px', top: oy - wy + 'px', width: 2 * wx + 'px', height: dep + 'px', transformOrigin: '50% 0', transform: 'rotateX(-90deg)' });
+    Object.assign($('.well-s', els.well).style, { left: ox - wx + 'px', top: oy + wy - dep + 'px', width: 2 * wx + 'px', height: dep + 'px', transformOrigin: '50% 100%', transform: 'rotateX(90deg)' });
+    Object.assign($('.well-l', els.well).style, { left: ox - wx + 'px', top: oy - wy + 'px', width: dep + 'px', height: 2 * wy + 'px', transformOrigin: '0 50%', transform: 'rotateY(90deg)' });
+    Object.assign($('.well-r', els.well).style, { left: ox + wx - dep + 'px', top: oy - wy + 'px', width: dep + 'px', height: 2 * wy + 'px', transformOrigin: '100% 50%', transform: 'rotateY(-90deg)' });
+    // the soft floor shadow belongs to the fixed frame and never shifts with tilt
     const shx = FRAME_X * 1.2 * S, shy = FRAME_Y * 1.26 * S;
-    Object.assign(els.shadow.style, { width: 2 * shx + 'px', height: 2 * shy + 'px', left: -shx + 'px', top: -shy + 'px' });
+    Object.assign(els.shadow.style, { width: 2 * shx + 'px', height: 2 * shy + 'px', left: -shx + 'px', top: -shy + 'px', transform: `translate3d(0px, ${(22 * S).toFixed(1)}px, ${(-(dep + 12 * S)).toFixed(1)}px)` });
     R.resize(S, persp);
     placeUI();
     if (animate && old && (Math.abs(old.cx - L.cx) > 1 || Math.abs(old.cy - L.cy) > 1 || Math.abs(old.S - S) > 0.001 || old.theta !== L.theta || old.pitch !== L.pitch)) {
@@ -395,6 +440,7 @@
   }
 
   const ARROW = '<svg class="pad-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h15M11 4.5 18.5 12 11 19.5" fill="none" stroke="currentColor" stroke-width="3.2"/></svg>';
+  let padEls = [];
   function placeUI() {
     // lever pads
     const keyFor = (c) => {
@@ -404,25 +450,43 @@
       return ['A', 'D'][hand];
     };
     els.pads.innerHTML = '';
+    padEls = [];
+    const thRad = L.theta * DEG, cTh = Math.cos(thRad), sTh = Math.sin(thRad);
     for (const pd of L.pads) {
       const d = document.createElement('div');
       d.className = 'pad';
       d.dataset.c = pd.c; d.dataset.p = pd.p;
       if ((heldMask >> pd.c) & 1) d.classList.add('on');
       Object.assign(d.style, { left: pd.x + 'px', top: pd.y + 'px', width: pd.w + 'px', height: pd.h + 'px' });
+      const compact = pd.w < 140 || pd.h < 108;
+      if (compact) d.classList.add('compact');
       const k = Math.round(clamp(Math.min(pd.w, pd.h) * 0.4, 40, 66));
-      // the direction the marble rolls when this lever is held, on screen
+      // pressing a lever sinks its corner, so the marble rolls toward that corner on screen
       const [sx, sy] = P.CORNERS[pd.c];
-      const ang = Math.atan2(-sy, -sx) / DEG + L.theta;
+      const ang = Math.atan2(sy, sx) / DEG + L.theta;
+      const cs = Math.cos(ang * DEG), sn = Math.sin(ang * DEG);
+      // depth gauge sweeps from the board-side release edge toward the arrow's edge
+      const fdx = sx * cTh, fdy = sx * sTh;
+      const fillAxis = Math.abs(fdy) >= Math.abs(fdx) ? (fdy >= 0 ? 'd' : 'u') : (fdx >= 0 ? 'r' : 'l');
+      const scaleSide = (fillAxis === 'd' || fillAxis === 'u') ? (cs < 0 ? 'r' : 'l') : (sn < 0 ? 'b' : 't');
+      d.dataset.fill = fillAxis;
+      d.dataset.scale = scaleSide;
       const key = keyFor(pd.c);
-      d.innerHTML = `<div class="pad-bg"></div><div class="pad-in" style="--face:${pd.face}deg"><div class="knob" style="--k:${k}px">${key ? `<span class="key">${key}</span>` : ''}</div><div class="pad-label">${SYM[pd.p]}<span class="pl-h">Hold</span><span class="pl-t">Recharge</span><span class="pl-g">Let go</span></div><span class="pad-meter"><i></i></span></div>${ARROW}`;
+      d.innerHTML = `<div class="pad-bg"><div class="pad-fill"><i class="pad-stripes"></i></div><div class="pad-stop" aria-hidden="true"></div><div class="pad-scale" aria-hidden="true"><i class="ps-t ps-25"></i><i class="ps-t ps-50"></i><i class="ps-t ps-75"></i><i class="ps-stop"></i></div></div><div class="pad-in" style="--face:${pd.face}deg"><div class="knob" style="--k:${k}px">${key ? `<span class="key">${key}</span>` : ''}</div><div class="pad-label">${SYM[pd.p]}<span class="pl-h">Hold</span><span class="pl-f">Full</span><span class="pl-t">Recharge</span><span class="pl-g">Let go</span></div><span class="pad-meter"><i></i></span></div>${ARROW}`;
       const arrow = d.querySelector('.pad-arrow');
-      const ar = Math.min(pd.w, pd.h) * 0.36 + 16;
-      // an arrow pointing down sits out past the end of the push meter, not on top of it
-      const wide = pd.face === 0 && Math.sin(ang * DEG) > 0.3 ? 1.35 : 1;
-      Object.assign(arrow.style, { left: pd.w / 2 + Math.sign(Math.cos(ang * DEG)) * Math.min(Math.abs(Math.cos(ang * DEG)) * ar * wide, pd.w / 2 - 18) + 'px', top: pd.h / 2 + Math.sin(ang * DEG) * Math.min(ar, pd.h / 2 - 18) + 'px' });
+      const margin = compact ? 21 : 24;
+      const ax = Math.min(Math.max(pd.w * 0.34, compact ? 38 : 48), pd.w / 2 - margin);
+      const ay = Math.min(Math.max(pd.h * 0.32, compact ? 26 : 36), pd.h / 2 - margin);
+      Object.assign(arrow.style, { left: (pd.w / 2 + Math.sign(cs) * ax).toFixed(1) + 'px', top: (pd.h / 2 + Math.sign(sn) * ay).toFixed(1) + 'px' });
       arrow.style.setProperty('--dir', ang + 'deg');
       els.pads.append(d);
+      padEls.push({
+        el: d, c: pd.c, p: pd.p, fillAxis,
+        fillEl: d.querySelector('.pad-fill'),
+        knobEl: d.querySelector('.knob'),
+        meterEl: d.querySelector('.pad-meter i'),
+        lastD: -1, lastE: -1, lastFlags: -1,
+      });
     }
     // score badges
     for (const p of ['r', 'b']) {
@@ -455,7 +519,7 @@
     hudKey = '';
     paintHUD(true);
     paintSeries();
-    readyKey = ''; tipKey = '';
+    readyKey = null; tipKey = '';
     paintReady();
     paintTips();
   }
@@ -473,14 +537,15 @@
   }
 
   /* ================================================================
-     Drawing. Two canvases tilt with the board in 3D (CSS): a static one
-     (frame, tray, pockets, pegs) and a live one (levers, marble, glows).
-     A third, flat canvas on top carries the particle bursts.
+     Drawing. The outer frame (cvFrame) stays fixed while the tray
+     (cvBase + cvLive) sinks and tilts inside it in 3D (CSS).
+     A flat canvas on top (#fx) carries the particle bursts.
      ================================================================ */
   const R = (() => {
-    const bctx = els.base.getContext('2d'), lctx = els.live.getContext('2d');
+    const bctx = els.base.getContext('2d'), lctx = els.live.getContext('2d'), fctx = els.frame.getContext('2d');
     let k = 1, eye = { x: 0, y: 0, h: 3000 }, light = { x: 0.5, y: 0.8 }, ballSprite = null, ballShadow = null, key = '', dirty = false;
     const sparks = [];
+    const _dd = [0, 0, 0, 0];
     const PEG_H = 30, WALL_H = 22;
 
     function resize(S, persp) {
@@ -499,8 +564,9 @@
       const nk = [w, h, eye.x.toFixed(0), eye.y.toFixed(0), eye.h.toFixed(0), L.theta].join('|');
       if (nk === key && !dirty) return;
       key = nk; dirty = false;
-      for (const c of [els.base, els.live]) { c.width = w; c.height = h; }
-      drawBase();
+      for (const c of [els.base, els.live, els.frame]) { c.width = w; c.height = h; }
+      drawFrame();
+      drawTray();
       makeSprites();
     }
     const lean = (x, y, h) => { const f = h / (eye.h - h); return [(x - eye.x) * f, (y - eye.y) * f]; };
@@ -514,25 +580,43 @@
       ctx.closePath();
     }
     const floorPath = (c) => rrect(c, -P.X, -P.Y, P.X, P.Y, P.CORNER);
+    const trayPath = (c) => rrect(c, -TRAY_X, -TRAY_Y, TRAY_X, TRAY_Y, 36);
     function pocketBox(p) {
       const xs = p.pts.map((q) => q[0]), ys = p.pts.map((q) => q[1]);
       return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
     }
 
-    function drawBase() {
-      const c = bctx;
+    /** Fixed outer frame ring (transparent opening over the tray). */
+    function drawFrame() {
+      const c = fctx;
       c.setTransform(1, 0, 0, 1, 0, 0);
-      c.clearRect(0, 0, els.base.width, els.base.height);
+      c.clearRect(0, 0, els.frame.width, els.frame.height);
       tf(c);
       const lx = light.x, ly = light.y;
-      // the tray's outer frame: bright white plastic, lit from the upper left
-      let g = c.createLinearGradient(-lx * FRAME_X, -ly * FRAME_Y, lx * FRAME_X, ly * FRAME_Y);
+      // bright white plastic outer frame, lit from the upper left
+      const g = c.createLinearGradient(-lx * FRAME_X, -ly * FRAME_Y, lx * FRAME_X, ly * FRAME_Y);
       g.addColorStop(0, '#ffffff'); g.addColorStop(0.5, '#f2f4f7'); g.addColorStop(1, '#d9dee6');
       rrect(c, -FRAME_X, -FRAME_Y, FRAME_X, FRAME_Y, 36); c.fillStyle = g; c.fill();
       c.lineWidth = 2; c.strokeStyle = 'rgba(14,22,40,.2)'; c.stroke();
       rrect(c, -FRAME_X + 3, -FRAME_Y + 3, FRAME_X - 3, FRAME_Y - 3, 33); c.lineWidth = 2.5; c.strokeStyle = 'rgba(255,255,255,.95)'; c.stroke();
-      // lever slots where each knob meets the frame
-      for (const [sx, sy] of P.CORNERS) { rrect(c, sx > 0 ? FRAME_X - 7 : -FRAME_X + 1, sy * 300 - 27, sx > 0 ? FRAME_X - 1 : -FRAME_X + 7, sy * 300 + 27, 3); c.fillStyle = 'rgba(14,22,40,.28)'; c.fill(); }
+      // recessed lever slot notches on the frame's outer edges where each stem passes
+      for (const [sx, sy] of P.CORNERS) {
+        const x0 = sx > 0 ? FRAME_X - 8 : -FRAME_X;
+        const x1 = sx > 0 ? FRAME_X : -FRAME_X + 8;
+        const y0 = sy * 300 - 14, y1 = sy * 300 + 14;
+        const ng = c.createLinearGradient(sx > 0 ? x0 : x1, 0, sx > 0 ? x1 : x0, 0);
+        ng.addColorStop(0, 'rgba(14,22,40,.24)'); ng.addColorStop(1, 'rgba(14,22,40,.36)');
+        rrect(c, x0, y0, x1, y1, 2);
+        c.fillStyle = ng; c.fill();
+        c.lineWidth = 1; c.strokeStyle = 'rgba(14,22,40,.16)'; c.stroke();
+        // 1px lighter bevel lip on the lit side of the recess
+        const xin = sx > 0 ? x0 - 0.8 : x1 + 0.8;
+        const ylit = ly >= 0 ? y1 + 0.8 : y0 - 0.8;
+        c.beginPath();
+        c.moveTo(xin, y0); c.lineTo(xin, y1);
+        c.moveTo(x0, ylit); c.lineTo(x1, ylit);
+        c.lineWidth = 1.2; c.strokeStyle = 'rgba(255,255,255,.85)'; c.stroke();
+      }
       // team rails: Red's end on the left, Blue's on the right
       c.lineCap = 'round';
       for (const [side, col] of [[-1, 'r'], [1, 'b']]) {
@@ -545,10 +629,27 @@
         const len = x === 0 ? 9 : 5;
         for (const sy of [-1, 1]) { c.beginPath(); c.moveTo(x, sy * (FRAME_Y - 4)); c.lineTo(x, sy * (FRAME_Y - 4 - len)); c.stroke(); }
       }
+      // punch out the inner opening so the tilting tray and shaded well show through
+      c.save();
+      c.globalCompositeOperation = 'destination-out';
+      trayPath(c); c.fillStyle = '#000'; c.fill();
+      c.restore();
+      // crisp inner lip around the opening
+      trayPath(c); c.lineWidth = 2; c.strokeStyle = 'rgba(14,22,40,.24)'; c.stroke();
+    }
+
+    /** Tilting inner tray: rim, sloped inner wall, floor, markings, pockets, pegs. */
+    function drawTray() {
+      const c = bctx;
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      c.clearRect(0, 0, els.base.width, els.base.height);
+      tf(c);
+      const lx = light.x, ly = light.y;
       // rim and the sloped inner wall of the tray
-      g = c.createLinearGradient(-lx * 526, -ly * 366, lx * 526, ly * 366);
+      let g = c.createLinearGradient(-lx * TRAY_X, -ly * TRAY_Y, lx * TRAY_X, ly * TRAY_Y);
       g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#e8ebf0');
-      rrect(c, -526, -366, 526, 366, 36); c.fillStyle = g; c.fill();
+      trayPath(c); c.fillStyle = g; c.fill();
+      c.lineWidth = 1.6; c.strokeStyle = 'rgba(14,22,40,.16)'; c.stroke();
       g = c.createLinearGradient(-lx * 520, -ly * 360, lx * 520, ly * 360);
       g.addColorStop(0, '#dde1e8'); g.addColorStop(1, '#f9fafb');
       rrect(c, -518, -358, 518, 358, 46); c.fillStyle = g; c.fill();
@@ -686,11 +787,11 @@
       c.beginPath(); c.arc(r * 0.38, r * 0.5, r * 0.07, 0, TAU); c.fillStyle = 'rgba(255,255,255,.6)'; c.fill();
       c.restore();
       c.beginPath(); c.arc(0, 0, r - 0.45, 0, TAU); c.lineWidth = 0.9; c.strokeStyle = 'rgba(10,14,20,.6)'; c.stroke();
-      // lever knobs, drawn once per team: resting, resting-and-tired, and the glow behind a held one
+      // lever tabs, drawn once per team: resting, pressed down, bottomed, tired, and the glow behind an active one
       knobSpr = {};
       for (const col of ['r', 'b']) {
         knobSpr[col] = {};
-        for (const mode of ['idle', 'tired', 'halo']) {
+        for (const mode of ['idle', 'down', 'bot', 'tired', 'halo']) {
           const cv = document.createElement('canvas');
           cv.width = Math.ceil(KNOB_W * k); cv.height = Math.ceil(KNOB_H * k);
           const kc = cv.getContext('2d');
@@ -708,17 +809,29 @@
       s.fillStyle = g; s.fillRect(0, 0, ss, ss);
     }
 
-    const KNOB_PAD = 36, KNOB_W = 42 + KNOB_PAD * 2, KNOB_H = 70 + KNOB_PAD * 2;
+    const KNOB_PAD = 44, KNOB_W = 42 + KNOB_PAD * 2, KNOB_H = 70 + KNOB_PAD * 2;
     let knobSpr = null;
     function paintKnob(c, col, mode) {
       const w = 42, h = 70, rr = 14, lx = light.x, ly = light.y;
-      if (mode === 'halo') { // just the colored glow; the knob itself is drawn over it
+      const sx = col === 'r' ? -1 : 1; // stem extends inward (-sx) into the frame wall, staying outside TRAY_X
+      const stemX0 = sx < 0 ? w / 2 - 4 : -w / 2 - 22;
+      const stemX1 = sx < 0 ? w / 2 + 22 : -w / 2 + 4;
+      if (mode === 'halo') { // just the colored glow; the tab itself is drawn over it
         c.shadowColor = COLOR[col]; c.shadowBlur = 28 * k;
         rrect(c, -w / 2 + 2, -h / 2 + 2, w / 2 - 2, h / 2 - 2, rr); c.fillStyle = COLOR[col]; c.fill(); c.fill();
         return;
       }
-      // body (darker underside) with a soft drop shadow
-      c.shadowColor = 'rgba(18,28,52,.35)'; c.shadowBlur = 10 * k; c.shadowOffsetX = lx * 6 * k; c.shadowOffsetY = ly * 6 * k;
+      const pressed = mode === 'down' || mode === 'bot';
+      // stem connecting the lever tab into the frame slot
+      c.fillStyle = COLOR_D[col];
+      rrect(c, stemX0, -11, stemX1, 11, 3); c.fill();
+      c.fillStyle = 'rgba(255,255,255,.22)';
+      c.fillRect(stemX0 + 2, -8, stemX1 - stemX0 - 4, 4);
+      // body (darker underside) with drop shadow: tighter & shorter when pressed down closer to the table
+      c.shadowColor = pressed ? 'rgba(18,28,52,.46)' : 'rgba(18,28,52,.35)';
+      c.shadowBlur = (pressed ? 3 : 12) * k;
+      c.shadowOffsetX = lx * (pressed ? 1.5 : 8) * k;
+      c.shadowOffsetY = ly * (pressed ? 1.5 : 8) * k;
       rrect(c, -w / 2, -h / 2, w / 2, h / 2, rr); c.fillStyle = COLOR_DD[col]; c.fill();
       c.shadowColor = 'transparent'; c.shadowBlur = 0; c.shadowOffsetX = 0; c.shadowOffsetY = 0;
       const g = c.createLinearGradient(-lx * w * 0.6, -ly * h * 0.6, lx * w * 0.6, ly * h * 0.6);
@@ -732,13 +845,81 @@
       }
       // gloss
       rrect(c, -w / 2 + 5, -h / 2 + 4, w / 2 - 5, -h / 2 + 18, 8); c.fillStyle = 'rgba(255,255,255,.3)'; c.fill();
-      if (mode === 'tired') { rrect(c, -w / 2, -h / 2, w / 2, h / 2, rr); c.fillStyle = 'rgba(236,238,242,.68)'; c.fill(); }
+      if (pressed) {
+        // darker team overlay when pressed down so quarter / half / three-quarter depths read clearly
+        c.save(); c.globalAlpha = 0.36; c.fillStyle = COLOR_DD[col];
+        rrect(c, stemX0, -11, stemX1, 11, 3); c.fill();
+        rrect(c, -w / 2, -h / 2, w / 2, h / 2, rr); c.fill();
+        c.restore();
+      }
+      if (mode === 'bot') {
+        // bright lock rim when bottomed out
+        rrect(c, -w / 2 + 1.5, -h / 2 + 1.5, w / 2 - 1.5, h / 2 - 1.5, rr - 1);
+        c.lineWidth = 2.4; c.strokeStyle = 'rgba(255,255,255,.82)'; c.stroke();
+      }
+      if (mode === 'tired') {
+        c.fillStyle = 'rgba(236,238,242,.68)';
+        rrect(c, stemX0, -11, stemX1, 11, 3); c.fill();
+        rrect(c, -w / 2, -h / 2, w / 2, h / 2, rr); c.fill();
+      }
     }
-    function knob(c, i, press, held, tired, glow) {
+    function knob(c, i, press, held, tired, glow, tray) {
       const [sx, sy] = P.CORNERS[i], spr = knobSpr[P.OWNER[i]];
-      const x = sx * (FRAME_X + 24 - press * 12) - KNOB_W / 2, y = sy * 300 - KNOB_H / 2;
-      if (held && !tired) { c.globalAlpha = 0.6 + 0.4 * glow; c.drawImage(spr.halo, x, y, KNOB_W, KNOB_H); c.globalAlpha = 1; }
-      c.drawImage(tired ? spr.tired : spr.idle, x, y, KNOB_W, KNOB_H);
+      let cx = sx * (FRAME_X + 27), cy = sy * 300;
+      if (!L.pitch && tray) {
+        // top-down views: compensate outward on the sunken tray plane so perspective never pulls the tab under the frame
+        const dist = eye.h, f0 = dist / (dist + tray.z0U);
+        const xr = cx * f0, yr = cy * f0;
+        const crx = tray.crx, srx = tray.srx, cry = tray.cry, sry = tray.sry;
+        const nx = sry, ny = -cry * srx, nz = cry * crx;
+        const t = ((dist - tray.tzU) * nz) / (dist * nz - xr * nx - yr * ny);
+        const px = t * xr, py = t * yr, pz = dist * (1 - t) - tray.tzU;
+        cx = px * cry + py * sry * srx - pz * sry * crx;
+        cy = py * crx + pz * srx;
+      }
+      const bot = !tired && press >= (P.K && P.K.BOTTOM != null ? P.K.BOTTOM : 0.97);
+      const sc = 1 - press * (L.pitch ? 0.13 : 0.09); // smaller when pressed down away from the viewer
+      const kw = KNOB_W * sc, kh = KNOB_H * sc, x = cx - kw / 2, y = cy - kh / 2;
+      if (!tired) {
+        if (bot) {
+          c.globalAlpha = 0.72 + 0.28 * glow;
+          c.drawImage(spr.halo, x, y, kw, kh);
+          c.globalAlpha = 1;
+        } else if (press > 0.03 || held) {
+          c.globalAlpha = 0.12 + press * 0.26;
+          c.drawImage(spr.halo, x, y, kw, kh);
+          c.globalAlpha = 1;
+        }
+      }
+      if (tired) { c.drawImage(spr.tired, x, y, kw, kh); return; }
+      if (bot) { c.drawImage(spr.bot, x, y, kw, kh); return; }
+      if (press <= 0.01) { c.drawImage(spr.idle, x, y, kw, kh); return; }
+      if (press >= 0.99) { c.drawImage(spr.down, x, y, kw, kh); return; }
+      c.drawImage(spr.down, x, y, kw, kh);
+      c.globalAlpha = 1 - press;
+      c.drawImage(spr.idle, x, y, kw, kh);
+      c.globalAlpha = 1;
+    }
+
+    /** One tapered inner-rim shadow band along edge A->B with inward unit normal (nx, ny). */
+    const RIM_W = 74;
+    function rimBand(c, ax, ay, bx, by, nx, ny, da, db) {
+      if (da + db < 0.005) return;
+      const ex = bx - ax, ey = by - ay, L = Math.hypot(ex, ey), tx = ex / L, ty = ey / L;
+      const vx = nx / RIM_W - tx * (db - da) / L, vy = ny / RIM_W - ty * (db - da) / L;
+      const v2 = vx * vx + vy * vy;
+      const p0x = ax - nx * (1 - da) * RIM_W, p0y = ay - ny * (1 - da) * RIM_W;
+      const g = c.createLinearGradient(p0x, p0y, p0x + vx / v2, p0y + vy / v2);
+      g.addColorStop(0, 'rgba(18,28,52,.38)');
+      g.addColorStop(0.2, 'rgba(18,28,52,.275)');
+      g.addColorStop(0.4, 'rgba(18,28,52,.181)');
+      g.addColorStop(0.6, 'rgba(18,28,52,.101)');
+      g.addColorStop(0.8, 'rgba(18,28,52,.037)');
+      g.addColorStop(1, 'rgba(18,28,52,0)');
+      c.beginPath();
+      c.moveTo(ax, ay); c.lineTo(bx, by); c.lineTo(bx + nx * RIM_W, by + ny * RIM_W); c.lineTo(ax + nx * RIM_W, ay + ny * RIM_W);
+      c.closePath();
+      c.fillStyle = g; c.fill();
     }
 
     /** one frame of the live canvas */
@@ -748,17 +929,34 @@
       c.clearRect(0, 0, els.live.width, els.live.height);
       tf(c);
       const now = V.now;
-      // the floor darkens a touch on the low side, so the tilt reads even without 3D
-      const sl = P.slope(V.lift), m = Math.hypot(sl.ax, sl.ay);
-      if (m > 0.02) {
-        const ux = sl.ax / m, uy = sl.ay / m, a = Math.min(1, m) * 0.11;
+      const tp = V.trayPress || V.press;
+      // the floor darkens toward the pressed (low) side, so the tilt reads even without 3D
+      const tl = P.tilt(tp), m = Math.hypot(tl.tx, tl.ty);
+      if (m > 0.015 || tl.sink > 0.015) {
         c.save(); floorPath(c); c.clip();
-        const g = c.createLinearGradient(-ux * 560, -uy * 560, ux * 560, uy * 560);
-        g.addColorStop(0, `rgba(255,255,255,${(a * 1.4).toFixed(3)})`); g.addColorStop(0.5, 'rgba(255,255,255,0)'); g.addColorStop(1, `rgba(18,28,52,${a.toFixed(3)})`);
-        c.fillStyle = g; c.fillRect(-P.X, -P.Y, 2 * P.X, 2 * P.Y);
+        if (m > 0.015) {
+          const ux = tl.tx / m, uy = tl.ty / m, a = Math.min(1, m) * 0.12;
+          const g = c.createLinearGradient(-ux * 560, -uy * 560, ux * 560, uy * 560);
+          g.addColorStop(0, `rgba(255,255,255,${(a * 1.3).toFixed(3)})`); g.addColorStop(0.5, 'rgba(255,255,255,0)'); g.addColorStop(1, `rgba(18,28,52,${a.toFixed(3)})`);
+          c.fillStyle = g; c.fillRect(-P.X, -P.Y, 2 * P.X, 2 * P.Y);
+        }
+        if (tl.sink > 0.015) {
+          c.fillStyle = `rgba(18,28,52,${(tl.sink * 0.05).toFixed(3)})`;
+          c.fillRect(-P.X, -P.Y, 2 * P.X, 2 * P.Y);
+        }
         c.restore();
       }
-      for (let i = 0; i < 4; i++) knob(c, i, V.lift[i], (V.held >> i) & 1, V.tired[P.OWNER[i]], 0.5 + 0.5 * Math.sin(now * 8));
+      // rim shadow cast by the fixed frame onto the sinking tray edges (interpolated per corner depth)
+      const d = P.depths(tp, _dd);
+      if (d[0] + d[1] + d[2] + d[3] > 0.005) {
+        c.save(); trayPath(c); c.clip();
+        rimBand(c, -TRAY_X, -TRAY_Y, TRAY_X, -TRAY_Y, 0, 1, d[0], d[2]);
+        rimBand(c, -TRAY_X, TRAY_Y, TRAY_X, TRAY_Y, 0, -1, d[1], d[3]);
+        rimBand(c, -TRAY_X, -TRAY_Y, -TRAY_X, TRAY_Y, 1, 0, d[0], d[1]);
+        rimBand(c, TRAY_X, -TRAY_Y, TRAY_X, TRAY_Y, -1, 0, d[2], d[3]);
+        c.restore();
+      }
+      for (let i = 0; i < 4; i++) knob(c, i, V.press[i], (V.held >> i) & 1, V.tired[P.OWNER[i]], 0.5 + 0.5 * Math.sin(now * 8), V.tray);
       // countdown: a pulse on the starting spot
       if (V.ring != null) {
         for (let j = 0; j < 2; j++) {
@@ -976,8 +1174,14 @@
 
   function resetMatch(keepScore) {
     P.reset(G.s); G.s.live = false;
-    G.s.lift = [0, 0, 0, 0];
-    G.grip.reset();
+    P.leverReset(G.s);
+    if (keepScore) {
+      const h = G.mode === 'local' ? { r: P.handsOf('r', heldMask), b: P.handsOf('b', heldMask) }
+        : G.mode === 'cpu' ? { r: G.me === 'r' ? P.handsOf('r', heldMask) : 0, b: G.me === 'b' ? P.handsOf('b', heldMask) : 0 }
+        : G.mode === 'host' ? { r: P.handsOf('r', heldMask), b: Net.guestLv() }
+        : { r: 0, b: 0 };
+      G.grip.serve(h);
+    } else G.grip.reset();
     if (!keepScore) { epoch++; G.score = { r: 0, b: 0 }; G.goalN = 0; G.firstPoint = true; }
     G.ready = { r: false, b: false }; G.go = false; idleT = 0;
     G.phase = 'count'; G.t = 0; G.goalPocket = -1; G.drop = null; G.glow = null; G.lastCount = -1;
@@ -1022,7 +1226,7 @@
     } else if (G.phase === 'play') {
       for (const p of ['r', 'b']) {
         const was = G.grip.tired[p];
-        G.eff[p] = G.grip.use(p, G.hands[p], dt);
+        G.eff[p] = G.grip.use(p, G.hands[p], dt, G.s.press);
         if (!was && G.grip.tired[p]) events.push({ k: 'tired', p });
       }
       G.mask = P.maskFor('r', G.eff.r) | P.maskFor('b', G.eff.b);
@@ -1058,10 +1262,14 @@
   function recomputeHeld() {
     let m = 0;
     touches.forEach((c) => { if (c >= 0) m |= 1 << c; });
-    keys.forEach((c) => { m |= 1 << c; });
+    keys.forEach((code) => { const c = keyCorner(code); if (c >= 0) m |= 1 << c; });
     if (m !== heldMask) {
       const pressed = m & ~heldMask;
       heldMask = m;
+      if ((G.phase === 'goal' || G.phase === 'count') && G.mode !== 'guest') {
+        const ps = G.mode === 'local' ? ['r', 'b'] : G.me ? [G.me] : [];
+        for (const p of ps) if (G.grip.tired[p] && !P.handsOf(p, m)) G.grip.tired[p] = false;
+      }
       if (pressed && screen === 'game') {
         Snd.play('lever', true);
         if (navigator.vibrate) try { navigator.vibrate(8); } catch (e) {}
@@ -1119,9 +1327,9 @@
     if (c < 0) return;
     e.preventDefault();
     if (e.repeat) return;
-    keys.add(c); recomputeHeld();
+    keys.add(e.code); recomputeHeld();
   });
-  window.addEventListener('keyup', (e) => { const c = keyCorner(e.code); if (c >= 0 && keys.delete(c)) recomputeHeld(); });
+  window.addEventListener('keyup', (e) => { if (keys.delete(e.code)) recomputeHeld(); });
 
   /* ================================================================
      HUD + overlays
@@ -1155,17 +1363,61 @@
       });
     }
     hudKey = '';
+    for (let i = 0; i < padEls.length; i++) { padEls[i].lastD = -1; padEls[i].lastE = -1; padEls[i].lastFlags = -1; }
+  }
+  function bottomedFor(p, thr) {
+    if (G.grip && typeof G.grip.bottomed === 'function') return G.grip.bottomed(p, G.s.press);
+    const h = P.HAND[p];
+    return (G.s.press[h[0]] >= thr ? 1 : 0) + (G.s.press[h[1]] >= thr ? 1 : 0);
   }
   function paintMeters() {
-    const k = [G.grip.e.r.toFixed(2), G.grip.e.b.toFixed(2), G.grip.tired.r, G.grip.tired.b, heldMask].join();
-    if (k === hudKey) return;
-    hudKey = k;
-    $$('.pad', els.pads).forEach((pd) => {
-      const p = pd.dataset.p;
-      pd.classList.toggle('tired', !!G.grip.tired[p]);
-      pd.classList.toggle('grip', !!G.grip.tired[p] && !!((heldMask >> +pd.dataset.c) & 1)); // still holding a rested lever: "Let go"
-      pd.querySelector('.pad-meter i').style.transform = `scaleX(${G.grip.e[p].toFixed(3)})`;
-    });
+    if (!padEls.length) return;
+    const thr = P.K && P.K.BOTTOM != null ? P.K.BOTTOM : 0.97;
+    const br = bottomedFor('r', thr), bb = bottomedFor('b', thr);
+    for (let i = 0; i < padEls.length; i++) {
+      const it = padEls[i], p = it.p, c = it.c;
+      const d = clamp(G.s.press[c], 0, 1);
+      const e = clamp(G.grip.e[p], 0, 1);
+      const tired = !!G.grip.tired[p];
+      const on = !!((heldMask >> c) & 1);
+      const grip = tired && on;
+      const bot = !tired && d >= thr;
+      const drain = !tired && (p === 'r' ? br : bb) > 0;
+      const refill = !tired && !drain && e < 0.995;
+      const hi = !tired && d >= 0.8;
+      const low = !tired && drain && e < 0.3;
+      const deep = !tired && d > 0.02;
+      const flags = (tired ? 1 : 0) | (grip ? 2 : 0) | (bot ? 4 : 0) | (drain ? 8 : 0) | (refill ? 16 : 0) | (hi ? 32 : 0) | (low ? 64 : 0) | (deep ? 128 : 0);
+      if (flags !== it.lastFlags) {
+        it.lastFlags = flags;
+        const cl = it.el.classList;
+        cl.toggle('tired', tired);
+        cl.toggle('grip', grip); // still holding a rested lever: "Let go"
+        cl.toggle('bot', bot);
+        cl.toggle('drain', drain);
+        cl.toggle('refill', refill);
+        cl.toggle('hi', hi);
+        cl.toggle('low', low);
+        cl.toggle('deep', deep);
+      }
+      const dQ = Math.round(d * 200);
+      if (dQ !== it.lastD) {
+        it.lastD = dQ;
+        const pct = dQ === 0 ? '102' : ((1 - dQ / 200) * 100).toFixed(2);
+        const ax = it.fillAxis;
+        it.fillEl.style.transform = ax === 'd' ? `translate3d(0,-${pct}%,0)`
+          : ax === 'u' ? `translate3d(0,${pct}%,0)`
+          : ax === 'l' ? `translate3d(${pct}%,0,0)`
+          : `translate3d(-${pct}%,0,0)`;
+        const dv = dQ / 200;
+        it.knobEl.style.transform = dQ === 0 ? '' : `translate3d(0,${(dv * 5).toFixed(2)}px,0) scale(${(1 - dv * 0.1).toFixed(3)})`;
+      }
+      const eQ = Math.round(e * 200);
+      if (eQ !== it.lastE) {
+        it.lastE = eQ;
+        it.meterEl.style.transform = `scaleX(${(eQ / 200).toFixed(3)})`;
+      }
+    }
   }
 
   function showCount(n) {
@@ -1219,13 +1471,13 @@
   }
 
   /* ---------- ready-up: nobody gets served before they're looking ---------- */
-  let readyKey = '';
+  let readyKey = null;
   const TICK = '<svg class="rd-tick" viewBox="0 0 24 24" aria-hidden="true"><path d="m4.5 12.5 5 5L19.5 6.5" fill="none" stroke="currentColor" stroke-width="3.4"/></svg>';
   function paintReady() {
     const on = screen === 'game' && G.phase === 'ready' && !!L && L.bans.length > 0;
     const online = isOnline();
     const key = on ? [L.view, L.vw, L.vh, G.mode, G.ready.r, G.ready.b, G.names.r, G.names.b, G.game].join() : '';
-    if (key === readyKey) return;
+    if (key === readyKey && (on || !els.ready.childNodes.length)) return;
     readyKey = key;
     if (!on) { els.ready.replaceChildren(); return; }
     const kept = document.activeElement && els.ready.contains(document.activeElement);
@@ -1318,7 +1570,10 @@
       } else if (ev.k === 'over') {
         if (G.mode === 'demo') continue;
         store.set('og-tip-hold', '1'); // played a whole match: no need for the lever hint
-        if (G.mode !== 'guest') { G.series[ev.winner]++; if (G.mode === 'host') Net.saveSeries(); paintSeries(); } // the guest reads the series from the room
+        if (G.mode !== 'guest') {
+          if (G.mode !== 'host' || G.series.n !== G.game) { G.series[ev.winner]++; if (G.mode === 'host') { G.series.n = G.game; Net.saveSeries(); } }
+          paintSeries();
+        } // the guest reads the series from the room
         later(() => showWin(ev.winner), 300);
       } else if (ev.k === 'tired') {
         if (G.mode !== 'demo' && (!G.me || ev.p === G.me)) Snd.play('tired');
@@ -1364,7 +1619,7 @@
       // nobody has touched a lever and the marble is just sitting there: say what to do (once per device)
       if (G.phase === 'play' && !G.paused && !G.hold && heldMask === 0 && Math.hypot(G.s.vx, G.s.vy) < 8) {
         idleT += dt;
-        if (idleT > 4 && !store.get('og-tip-hold')) { store.set('og-tip-hold', '1'); toast('Hold a lever to tilt the board', 4200); }
+        if (idleT > 4 && !store.get('og-tip-hold')) { store.set('og-tip-hold', '1'); toast('Hold a lever to sink it. Tap to hold it there.', 4200); }
       } else idleT = 0;
     }
     if (G.phase !== lastPhase) { lastPhase = G.phase; paintReady(); }
@@ -1375,21 +1630,32 @@
     if (TEST) { work.push(performance.now() - now); if (work.length > 600) work.shift(); }
   }
   const work = [];
-  let lastPhase = '', lastBoardT = '', lastShadowT = '', liveDirty = 30, drawn = 0;
+  const _rd = [0, 0, 0, 0], lastStemT = ['', '', '', ''], _tr = { crx: 1, srx: 0, cry: 1, sry: 0, tzU: -2.5, z0U: 2.5 };
+  let lastPhase = '', lastTrayT = '', liveDirty = 30, drawn = 0;
 
   function render(t, dt) {
     if (!L) return;
     // paused: nothing moves, so after the levers have settled there's nothing to redraw
     if (G.paused && screen === 'game') { Snd.roll(0); if (liveDirty <= 0) return; liveDirty--; } else liveDirty = 30;
-    // the board tilts toward the lifted corners
-    const lift = G.s.lift;
-    const TILT = L.view === 'T' || L.view === 'O' ? 2.8 : 3.8;
-    const ry = TILT * ((lift[0] + lift[1]) - (lift[2] + lift[3]));
-    const rx = TILT * ((lift[1] + lift[3]) - (lift[0] + lift[2]));
-    const bt = `rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`;
-    if (bt !== lastBoardT) { lastBoardT = bt; els.board.style.transform = bt; }
-    const sht = `translate3d(${(ry * 10 * L.S).toFixed(1)}px, ${(-rx * 10 * L.S + 22 * L.S).toFixed(1)}px, ${(-60 * L.S).toFixed(1)}px)`;
-    if (sht !== lastShadowT) { lastShadowT = sht; els.shadow.style.transform = sht; }
+    // the tray sinks and tilts down toward pressed corners inside the fixed outer frame
+    const press = G.s.press;
+    const d = P.depths(press, _rd);
+    const tl = P.tilt(press);
+    const b = tl.tx * 0.5, c = tl.ty * 0.5;
+    const twist = 0.25 * (d[0] - d[1] - d[2] + d[3]);
+    const a = tl.sink + Math.abs(twist);
+    const ryRad = Math.atan((DROP_V * b) / TRAY_X), rxRad = -Math.atan((DROP_V * c) / TRAY_Y);
+    const ry = ryRad / DEG, rx = rxRad / DEG;
+    const z0 = Math.max(2, 2.5 * L.S);
+    const tz = -(z0 + DROP_V * a * L.S);
+    const tt = `translate3d(0px, 0px, ${tz.toFixed(1)}px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`;
+    if (tt !== lastTrayT) {
+      lastTrayT = tt;
+      els.tray.style.transform = tt;
+      _tr.crx = Math.cos(rxRad); _tr.srx = Math.sin(rxRad);
+      _tr.cry = Math.cos(ryRad); _tr.sry = Math.sin(ryRad);
+      _tr.z0U = z0 / L.S; _tr.tzU = tz / L.S;
+    }
     // marble: rolling, dropping into a hole, or waiting in the middle
     let ball = null, ring = null;
     if (G.drop) {
@@ -1405,9 +1671,16 @@
       }
     }
     if (G.glow) { G.glow.t += dt; if (G.glow.t > 2.6) G.glow = null; }
-    const heldShown = G.mode === 'guest' ? Net.shownMask() : (G.mode === 'local' || G.mode === 'cpu' || G.mode === 'host' ? (G.phase === 'play' ? G.mask : heldMask & ownMask()) : G.mask);
+    const prePlay = G.phase === 'count' || G.phase === 'ready';
+    const heldShown = G.mode === 'guest' ? Net.shownMask() : (G.mode === 'local' || G.mode === 'cpu' || G.mode === 'host' ? (G.phase === 'play' ? G.mask : (prePlay ? heldMask & ownMask() : 0)) : G.mask);
+    const tabP = prePlay ? knobPress(heldShown, dt) : press;
+    if (!prePlay) for (let i = 0; i < 4; i++) kl[i] = press[i];
+    for (let i = 0; i < 4; i++) {
+      const st = `translate3d(${(tabP[i] * stemTravel).toFixed(1)}px, 0px, 0px)`;
+      if (st !== lastStemT[i]) { lastStemT[i] = st; els.stems[i].style.transform = st; }
+    }
     drawn++;
-    R.drawLive({ now: t, dt, lift: knobLift(heldShown, dt), held: heldShown, tired: G.grip.tired, ball, glow: G.glow, ring, mine: tipKey ? tipColors() : null });
+    R.drawLive({ now: t, dt, trayPress: press, press: tabP, held: heldShown, tired: G.grip.tired, ball, glow: G.glow, ring, mine: tipKey ? tipColors() : null, tray: _tr });
     // the rolling sound stops whenever the game does: paused, on hold for a connection, or the page hidden
     if (screen === 'game') { paintMeters(); Snd.roll(G.phase === 'play' && !G.paused && !G.hold && !document.hidden ? Math.hypot(G.s.vx, G.s.vy) : 0); } else Snd.roll(0);
   }
@@ -1416,8 +1689,9 @@
     return G.me === 'r' ? 3 : 12;
   }
   const kl = [0, 0, 0, 0];
-  function knobLift(mask, dt) {
-    for (let i = 0; i < 4; i++) kl[i] += (((mask >> i) & 1) - kl[i]) * (1 - Math.exp(-dt * 22));
+  function knobPress(mask, dt) {
+    // small "my lever answers" feedback during countdown / ready-up without fighting real depth during play
+    for (let i = 0; i < 4; i++) kl[i] += ((((mask >> i) & 1) * 0.55) - kl[i]) * (1 - Math.exp(-dt * 22));
     return kl;
   }
 
@@ -1525,7 +1799,7 @@
   const BEHIND = ['#title', '#online', '#zones', '#pads', '#hud', '#ready'].map((s) => $(s));
   const topModal = () => (modalStack.length ? modalStack[modalStack.length - 1].m : null);
   const modalOpen = (id) => modalStack.some((x) => x.m.id === id);
-  const focusables = (m) => $$('button:not([disabled]), a[href], input, [tabindex]:not([tabindex="-1"])', m).filter((el) => el.offsetParent !== null);
+  const focusables = (m) => $$('button:not([disabled]):not([tabindex="-1"]), a[href]:not([tabindex="-1"]), input:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"]):not([disabled])', m).filter((el) => el.offsetParent !== null);
   function syncModals() {
     const top = topModal();
     $$('.modal').forEach((m) => { m.classList.toggle('on', m === top); m.inert = m !== top; });
@@ -1577,6 +1851,7 @@
     const b = $('#pauseBtns');
     b.innerHTML = online
       ? `<button class="btn btn-ink" data-act="resume">Back to the game</button>
+         ${Net.guestAway() ? '<button class="btn btn-blue" data-act="n-find">Find a new opponent</button>' : ''}
          <button class="btn btn-soft" data-act="howto">How to play</button>
          <button class="btn btn-soft sound-row" data-act="sound"></button>
          <button class="btn btn-red" data-act="leave">${G.mode === 'host' ? 'End game for both' : 'Leave game'}</button>`
@@ -1687,7 +1962,7 @@
       if (loading) return loading;
       loading = new Promise((res, rej) => {
         const s = document.createElement('script');
-        s.src = 'net.js?v=3';
+        s.src = 'net.js?v=5';
         s.onload = () => (window.OGNet ? res(window.OGNet) : rej(new Error('Online play didn’t load.')));
         s.onerror = () => { loading = null; s.remove(); rej(new Error('Can’t reach the game server. Check your internet connection.')); };
         document.head.append(s);
@@ -1790,8 +2065,9 @@
     /* ----- room ----- */
     function enterRoom(r) {
       R0 = { code: r.code, isHost: r.isHost, uid: r.uid, meta: null, players: {}, gotPlayers: false, guestUid: null, conn: true,
+        seated: false, restoring: false, restoreGen: 0, restoreT: 0, startT: 0, keptWaiting: false,
         lastState: null, lastRecv: 0, rm: 0, rd: 0, shownGoalN: -1, shownGame: 0,
-        snap: null, hs: '', lastTs: null, offset: null, offT: 0, lead: 0, ex: 0, ey: 0, tiredFlip: 0,
+        snap: null, hs: '', lastTs: null, offset: null, offT: 0, lead: 0, trip: 0, ex: 0, ey: 0, tiredFlip: 0,
         sentKey: '', sentAt: 0, t0: 0, seatT: 0, hostGoneT: 0, dropT: 0 };
       try { history.replaceState(history.state, '', `${location.pathname}?join=${r.code}${TEST ? '&test' : ''}`); } catch (e) {}
       OGNet.on({
@@ -1805,6 +2081,8 @@
         players: (p) => { if (!R0) return; R0.players = p && typeof p === 'object' ? p : {}; R0.gotPlayers = true; update(); },
         state: (s) => onState(s),
         conn: (on) => onConn(on),
+        taken: () => { if (R0) closed('This game is now open in another tab.', 'Opened elsewhere'); },
+        evicted: () => { if (R0 && !R0.isHost) closed(R0.seated ? 'The host is looking for a new opponent.' : 'That game already has two players.'); },
         error: (e) => console.warn(e),
       });
       waiting();
@@ -1818,33 +2096,53 @@
       }
       hostHold();
     }
-    const nameOf = (uid) => { const n = R0 && R0.players[uid] && R0.players[uid].name; return typeof n === 'string' && n ? n.slice(0, 16) : 'Someone'; };
-    const online = (uid) => !!(R0 && uid && R0.players[uid] && R0.players[uid].online !== false);
-    const named = (p) => !!(p && typeof p.name === 'string' && p.name);
+    const rec = (uid) => { const p = R0 && uid && R0.players[uid]; return p && typeof p === 'object' ? p : null; };
+    const nameOf = (uid) => { const p = rec(uid); return p && typeof p.name === 'string' && p.name ? p.name.slice(0, 16) : 'Someone'; };
+    const online = (uid) => { const p = rec(uid); return !!(p && p.online !== false); };
+    const named = (p) => !!(p && typeof p === 'object' && typeof p.name === 'string' && p.name);
+    const validGuest = (p) => named(p) && p.v === (window.OGNet ? OGNet.V : 5);
+    const numEq = (v, n) => typeof v === 'number' && Number.isInteger(v) && v === n;
+    const jTime = (p) => (p && typeof p.joined === 'number' && Number.isFinite(p.joined) ? p.joined : Number.MAX_SAFE_INTEGER);
     function pickGuest() {
       if (!R0 || !R0.meta) return null;
-      if (R0.meta.guest && named(R0.players[R0.meta.guest])) return R0.meta.guest;
-      const c = Object.entries(R0.players).filter(([id, p]) => id !== R0.meta.host && named(p) && p.online !== false)
-        .sort((a, b) => (a[1].joined || 0) - (b[1].joined || 0) || (a[0] < b[0] ? -1 : 1));
+      const mg = typeof R0.meta.guest === 'string' ? R0.meta.guest : null;
+      if (R0.meta.status === 'playing') return mg && validGuest(R0.players[mg]) ? mg : null;
+      if (mg && validGuest(R0.players[mg])) return mg;
+      const c = Object.entries(R0.players).filter(([id, p]) => id !== R0.meta.host && validGuest(p) && p.online !== false)
+        .sort((a, b) => (jTime(a[1]) - jTime(b[1])) || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
       return c.length ? c[0][0] : null;
     }
     const clearT = (k) => { if (R0 && R0[k]) { clearTimeout(R0[k]); R0[k] = 0; } };
+    function resetLobby(drop) {
+      if (!R0 || R0.resetting) return;
+      R0.resetting = true;
+      try {
+        clearT('seatT');
+        if (drop) OGNet.prune(drop);
+        OGNet.setMeta({ status: 'lobby', guest: null, series: null });
+        OGNet.clearState();
+      } finally { if (R0) R0.resetting = false; }
+    }
 
     function waiting() {
       if (!R0) return;
       const host = R0.meta ? R0.meta.host : R0.isHost ? R0.uid : null;
       const g = pickGuest();
       const hostOn = R0.isHost || !R0.gotPlayers || online(host);
+      const playingWait = R0.isHost && R0.meta && R0.meta.status === 'playing' && g && !online(g);
       const hostLi = `<li class="r${hostOn ? '' : ' away'}">${SYM.r}<span>${esc(host ? nameOf(host) : '…')}${host === R0.uid ? ' (you)' : hostOn ? '' : ' · not connected'}</span><em>Red</em></li>`;
       const guestLi = g ? `<li class="b${online(g) ? '' : ' away'}">${SYM.b}<span>${esc(nameOf(g))}${g === R0.uid ? ' (you)' : online(g) ? '' : ' · reconnecting'}</span><em>Blue</em></li>`
         : '<li class="b wait">Waiting for someone to join<span class="spin-dots"><b></b><b></b><b></b></span></li>';
       const letters = R0.code.split('');
+      const hostTip = R0.restoring ? 'Getting your game back…'
+        : playingWait ? `${esc(nameOf(g))} isn’t connected right now. Your game picks up when they’re back.`
+        : `On their phone or computer, they open <b>bestlifecards.com/onguard</b>, tap <b>Play online → Join a game</b>, and type <b>${R0.code}</b>.`;
       const html = R0.isHost
         ? `${kick('Room', 'Send this code')}<h2>Your join code</h2>
           <button class="bigcode" type="button" data-act="n-copy" aria-label="Join code ${letters.join(' ')}. Tap to copy the invite link.">${letters.map((c) => `<span>${c}</span>`).join('')}</button>
           <p class="code-hint" id="ogHint">Tap the code to copy the invite link</p>
-          <p class="tip" id="ogTip">On their phone or computer, they open <b>bestlifecards.com/onguard</b>, tap <b>Play online → Join a game</b>, and type <b>${R0.code}</b>.</p>
-          <div class="stack"><button class="btn btn-blue" data-act="n-share">Send the invite</button></div>
+          <p class="tip" id="ogTip">${hostTip}</p>
+          <div class="stack"><button class="btn btn-blue" data-act="n-share">Send the invite</button>${playingWait || R0.restoring ? '<button class="btn btn-soft" type="button" data-act="n-find">Find a new opponent</button>' : ''}</div>
           <ul class="who">${hostLi}${guestLi}</ul>
           <button class="link-btn" type="button" data-act="n-leave">Cancel</button>`
         : hostOn
@@ -1863,10 +2161,10 @@
     function closed(text, title) {
       const was = R0;
       if (!was) return;
-      clearT('seatT'); clearT('hostGoneT'); clearT('dropT');
+      clearT('seatT'); clearT('hostGoneT'); clearT('dropT'); clearT('restoreT'); clearT('startT');
       R0 = null;
       // a guest takes their own name off the list on the way out, so nobody can pick a player who isn't there
-      try { OGNet.leave(was.isHost); } catch (e) {}
+      try { OGNet.leave(was.isHost || !was.meta || !named(was.players[was.uid])); } catch (e) {}
       closeAllModals(); hideToast(); releaseAll();
       setScreen('online');
       if (isOnline()) { startDemo(); clearOverlays(); applyLayout(true); keepAwake(false); }
@@ -1877,45 +2175,91 @@
     }
 
     /* everything that depends on the room's meta + players */
-    async function update() {
+    function update() {
       if (!R0 || !R0.meta || !R0.gotPlayers) return;
       const m = R0.meta;
       if (R0.isHost) {
         const g = screen === 'game' ? R0.guestUid : pickGuest();
-        // one guest seat: anyone else on the list (a second joiner, someone long gone) comes off it
-        for (const id of Object.keys(R0.players)) if (id !== m.host && id !== R0.uid && id !== g && (named(R0.players[id]) || !g)) OGNet.prune(id);
+        // one guest seat: anyone else on the list (a second joiner, wrong version, nameless stray) comes off it
+        for (const id of Object.keys(R0.players)) if (id !== m.host && id !== R0.uid && id !== g) OGNet.prune(id);
         if (screen !== 'game') {
-          // claim the seat for them right away, so a second joiner is turned away at once
-          if ((g || null) !== (m.guest || null) && !R0.starting) OGNet.setMeta({ guest: g || null });
-          if (g && !online(g) && !R0.starting) {
-            // they joined and dropped: hold the seat a moment, then free it
-            if (!R0.seatT) R0.seatT = setTimeout(() => { if (!R0) return; R0.seatT = 0; if (screen !== 'game' && !R0.starting && pickGuest() === g && !online(g)) { OGNet.prune(g); OGNet.setMeta({ guest: null }); } }, 8000);
-          } else clearT('seatT');
+          if (R0.starting && (!R0.guestUid || !validGuest(R0.players[R0.guestUid]))) {
+            R0.restoreGen++; clearT('restoreT'); clearT('startT');
+            R0.starting = false; R0.restoring = false; R0.guestUid = null;
+          }
+          if (!R0.starting) {
+            if (m.status === 'playing') {
+              clearT('seatT');
+              if (!g) { resetLobby(); waiting(); return; }
+            } else {
+              const mg = typeof m.guest === 'string' ? m.guest : null;
+              if (!g && (mg || m.series)) resetLobby();
+              else if (g && mg && g !== mg) { OGNet.setMeta({ status: 'lobby', guest: g, series: null }); OGNet.clearState(); }
+              else if ((g || null) !== mg) OGNet.setMeta({ guest: g || null });
+              if (g && !online(g)) {
+                // lobby only: hold the seat a moment, then reset to a clean lobby
+                if (!R0.seatT) R0.seatT = setTimeout(() => { if (!R0) return; R0.seatT = 0; if (screen !== 'game' && !R0.starting && R0.meta && R0.meta.status === 'lobby' && pickGuest() === g && !online(g)) resetLobby(g); }, 8000);
+              } else clearT('seatT');
+            }
+          }
           waiting();
           if (g && online(g) && !R0.starting) {
             R0.starting = true;
             R0.guestUid = g;
-            Snd.play('join');
-            toastIn(`${nameOf(g)} joined!`);
-            say(`${nameOf(g)} joined.`);
-            // after a reload, pick the match back up
-            let prev = null;
-            if (m.status === 'playing') prev = await OGNet.readState().catch(() => null);
             const room = R0;
-            setTimeout(() => { if (R0 === room) startHostGame(prev); }, 900);
+            const gen = ++R0.restoreGen;
+            if (m.status === 'playing') {
+              // after a reload, pick the match back up; retry with backoff if readState fails
+              R0.restoring = true;
+              waiting();
+              toastIn('Getting your game back…');
+              say('Getting your game back…');
+              let delay = TEST ? 150 : 400;
+              const tryRead = () => {
+                if (R0 !== room || R0.restoreGen !== gen || screen === 'game') return;
+                OGNet.readState().then((prev) => {
+                  if (R0 !== room || R0.restoreGen !== gen || screen === 'game') return;
+                  R0.restoring = false;
+                  R0.startT = setTimeout(() => { if (R0 === room && R0.restoreGen === gen) { R0.startT = 0; startHostGame(prev); } }, 900);
+                }, () => {
+                  if (R0 !== room || R0.restoreGen !== gen || screen === 'game') return;
+                  toastIn('Getting your game back…');
+                  R0.restoreT = setTimeout(tryRead, delay);
+                  delay = Math.min(delay * 2, TEST ? 800 : 4000);
+                });
+              };
+              tryRead();
+            } else {
+              Snd.play('join');
+              toastIn(`${nameOf(g)} joined!`);
+              say(`${nameOf(g)} joined.`);
+              R0.startT = setTimeout(() => { if (R0 === room && R0.restoreGen === gen) { R0.startT = 0; startHostGame(null); } }, 900);
+            }
           }
         } else {
           // in game: watch the guest
           const gid = R0.guestUid;
-          if (!gid || !named(R0.players[gid])) { backToLobby(`${G.names.b || 'The other player'} left the game. Send the code to someone else, or cancel.`); return; }
-          const rd = R0.players[gid].rd === G.game;
-          if (rd !== G.ready.b && G.phase === 'ready') { G.ready.b = rd; if (rd) Snd.play('tap'); paintReady(); }
+          const gp = rec(gid);
+          if (!gid || !validGuest(gp)) { backToLobby(`${G.names.b || 'The other player'} left the game. Send the code to someone else, or cancel.`); return; }
+          if ((G.phase === 'goal' || G.phase === 'count') && G.grip.tired.b && !guestLv()) G.grip.tired.b = false;
+          const me = rec(R0.uid);
+          const rdB = numEq(gp.rd, G.game);
+          const myRd = !!(me && numEq(me.rd, G.game));
+          if (myRd) R0.rd = G.game;
+          const rdR = R0.rd === G.game || myRd;
+          if (G.phase === 'ready' && (rdB !== G.ready.b || rdR !== G.ready.r)) {
+            if (rdB && !G.ready.b) Snd.play('tap');
+            G.ready.b = rdB; G.ready.r = rdR;
+            paintReady();
+          }
           hostHold();
           syncRematch();
         }
       } else {
-        if (m.guest && m.guest !== R0.uid) return closed('That game already has two players.');
-        if (!R0.players[R0.uid]) return closed(m.guest === R0.uid ? 'The host is looking for a new opponent.' : 'That game already has two players.'); // taken off the list
+        const myRec = rec(R0.uid);
+        if (m.guest === R0.uid && named(myRec)) R0.seated = true;
+        if (!named(myRec)) return closed(R0.seated ? 'The host is looking for a new opponent.' : 'That game already has two players.');
+        if (m.guest && m.guest !== R0.uid) return closed(R0.seated ? 'The host is looking for a new opponent.' : 'That game already has two players.');
         const hostOn = online(m.host);
         if (m.status === 'playing' && m.guest === R0.uid && screen !== 'game') startGuestGame();
         else if (m.status === 'lobby' && screen === 'game') { // host went back to the lobby
@@ -1943,6 +2287,7 @@
     }
 
     /* ----- host ----- */
+    function guestAway() { return !!(R0 && R0.isHost && R0.guestUid && !online(R0.guestUid)); }
     /** Only the host runs the game, so it stops while either player is offline (nobody scores against an
         empty chair, or on a board the host can't share), and picks up with a fresh countdown for both. */
     function hostHold() {
@@ -1950,10 +2295,13 @@
       const gid = R0.guestUid, gAway = !online(gid), away = gAway || R0.conn === false;
       if (gAway) {
         if (R0.conn !== false) toast(`Waiting for ${nameOf(gid)} to come back…`, 0);
-        if (!R0.dropT && !modalOpen('drop')) R0.dropT = setTimeout(() => { if (!R0) return; R0.dropT = 0; if (screen === 'game' && !online(R0.guestUid)) openDrop(); }, TEST ? 1500 : 5000);
+        if (!R0.dropT && !modalOpen('drop') && !R0.keptWaiting) R0.dropT = setTimeout(() => { if (!R0) return; R0.dropT = 0; if (screen === 'game' && !online(R0.guestUid)) openDrop(); }, TEST ? 1500 : 5000);
       } else {
+        R0.keptWaiting = false;
         clearT('dropT');
         if (modalOpen('drop')) closeModal($('#drop'));
+        const fnBtn = modalOpen('pause') && $('#pauseBtns [data-act="n-find"]');
+        if (fnBtn) fnBtn.remove();
       }
       if (away && !G.hold) { G.hold = true; releaseAll(); }
       else if (!away && G.hold) {
@@ -1974,40 +2322,41 @@
     /** keep the room and its code, and wait for someone new */
     function findNew() {
       if (!R0 || !R0.isHost) return;
-      backToLobby('Send the code to someone new. The game opens when they join.', R0.guestUid);
+      const drop = R0.guestUid || (R0.meta && typeof R0.meta.guest === 'string' && R0.meta.guest) || pickGuest();
+      backToLobby('Send the code to someone new. The game opens when they join.', drop);
     }
 
     function startHostGame(prev) {
       if (!R0 || !R0.isHost) return;
-      R0.starting = false;
+      R0.starting = false; R0.restoring = false;
       const g = R0.guestUid;
       if (!g || !online(g)) { R0.guestUid = null; waiting(); update(); return; }
       G.names = names();
       enterGame('host', 'r');
-      G.series = cleanSeries(R0.meta && R0.meta.series);
+      G.series = cleanSeries(R0.meta && R0.meta.series, true);
       R0.t0 = OGNet.now() - performance.now(); // one clock for the whole session: server time, ticking with this page
       R0.sentKey = ''; R0.sentAt = 0;
-      const mine = R0.players[R0.uid] || {};
+      const mine = rec(R0.uid);
       const pv = cleanState(prev);
       if (pv) {
         // the host reloaded mid-match: same game number, same score
         G.game = pv.n; G.score = { r: pv.sr, b: pv.sb }; G.goalN = pv.gn; G.firstPoint = pv.sr + pv.sb === 0;
-        R0.rm = mine.rm === G.game ? G.game : 0;
+        R0.rm = mine && numEq(mine.rm, G.game) ? G.game : 0;
         paintHUD(true);
         if (pv.p === 3 || pv.sr >= TARGET || pv.sb >= TARGET) {
           // it had already been won: straight back to the result, not one more point
           const w = pv.sr >= pv.sb ? 'r' : 'b';
           G.phase = 'over'; G.t = 0;
-          if (pv.p !== 3) { G.series[w]++; saveSeries(); } // reloaded during the last celebration, before the win was counted
+          if (G.series.n !== G.game) { G.series[w]++; G.series.n = G.game; saveSeries(); }
           showWin(w, true);
         } else if (pv.p === 4) {
           awaitReady();
-          if (mine.rd === G.game) { R0.rd = G.game; G.ready.r = true; }
-          G.ready.b = (R0.players[g] || {}).rd === G.game;
+          if (mine && numEq(mine.rd, G.game)) { R0.rd = G.game; G.ready.r = true; }
+          G.ready.b = !!(rec(g) && numEq(rec(g).rd, G.game));
           paintReady();
         }
       } else {
-        G.game = (((R0.meta && R0.meta.games) | 0) || 0) + 1;
+        G.game = int(R0.meta && R0.meta.games, 0, 1e6, 0) + 1;
         R0.rm = 0; R0.rd = 0;
         awaitReady();
       }
@@ -2016,27 +2365,27 @@
     }
     function backToLobby(text, drop) {
       if (!R0) return;
-      clearT('dropT'); clearT('seatT');
-      R0.guestUid = null; R0.starting = false;
+      R0.restoreGen++;
+      clearT('dropT'); clearT('seatT'); clearT('restoreT'); clearT('startT');
+      R0.guestUid = null; R0.starting = false; R0.restoring = false; R0.keptWaiting = false;
       closeAllModals(); hideToast(); releaseAll();
       // leave the game screen first: the writes below call straight back into update()
-      setScreen('online'); startDemo(); clearOverlays(); applyLayout(true); keepAwake(false);
-      if (drop) OGNet.prune(drop);
-      OGNet.setMeta({ status: 'lobby', guest: null, series: null });
-      OGNet.clearState();
+      if (screen !== 'online' || isOnline()) { setScreen('online'); startDemo(); clearOverlays(); applyLayout(true); keepAwake(false); }
+      resetLobby(drop);
       panel._html = '';
       waiting();
       toastIn(text);
       say(text);
     }
-    function saveSeries() { if (R0 && R0.isHost) OGNet.setMeta({ series: { r: G.series.r, b: G.series.b } }); }
+    function saveSeries() { if (R0 && R0.isHost) OGNet.setMeta({ series: { r: G.series.r, b: G.series.b, n: G.series.n || 0 } }); }
 
     /* host: send the game ~30x a second while playing and slower otherwise; anything that changes the
        phase, the score or who's ready goes out at once; after the final whistle, nothing until the next match */
     function hostSend(now) {
       if (!R0 || !R0.isHost || screen !== 'game' || G.mode !== 'host') return;
       const p = PHASES.indexOf(G.phase);
-      const key = [p, G.goalN, G.score.r, G.score.b, G.game, G.hold ? 1 : 0, G.ready.r ? 1 : 0, G.ready.b ? 1 : 0].join();
+      const m = G.phase === 'play' ? G.mask : 0;
+      const key = [p, G.goalN, G.score.r, G.score.b, G.game, G.hold ? 1 : 0, G.ready.r ? 1 : 0, G.ready.b ? 1 : 0, m].join();
       if (key === R0.sentKey) {
         if (G.phase === 'over') return;
         const every = G.phase === 'play' && !G.hold ? 33 : G.phase === 'ready' ? 600 : 150;
@@ -2049,14 +2398,15 @@
         sr: G.score.r, sb: G.score.b, gn: G.goalN, gp: G.goalPocket, n: G.game,
         er: Math.round(G.grip.e.r * 100), eb: Math.round(G.grip.e.b * 100), tr: (G.grip.tired.r ? 1 : 0) | (G.grip.tired.b ? 2 : 0),
         w: G.hold ? 1 : 0, ts: Math.round(R0.t0 + now), hs: SESSION,
-        lf: G.s.lift.reduce((a, v, i) => a | (Math.round(clamp(v, 0, 1) * 63) << (i * 6)), 0), // the four corner lifts, 6 bits each
+        ls: P.leverPack(G.s), // all 4 levers: depth (10b), up/held timers (4 ms), tap flag
       };
       OGNet.sendState(st);
     }
     function guestLv() {
       if (!R0 || !R0.guestUid) return 0;
-      const p = R0.players[R0.guestUid];
-      return p && p.online !== false ? (p.lv | 0) & 3 : 0;
+      const p = rec(R0.guestUid);
+      const lv = p && p.online !== false ? p.lv : 0;
+      return Number.isInteger(lv) && lv >= 0 && lv <= 3 ? lv : 0;
     }
 
     /* ----- ready-up: both tap Ready, then the host starts the countdown ----- */
@@ -2069,8 +2419,11 @@
     }
     function guestReady() {
       if (!R0 || R0.isHost || G.mode !== 'guest' || G.phase !== 'ready') return;
-      const h = R0.players[R0.meta && R0.meta.host];
-      const r = !!h && h.rd === G.game, b = R0.rd === G.game;
+      const h = rec(R0.meta && R0.meta.host), me = rec(R0.uid);
+      const r = !!(h && numEq(h.rd, G.game));
+      const mine = !!(me && numEq(me.rd, G.game));
+      if (mine) R0.rd = G.game;
+      const b = R0.rd === G.game || mine;
       if (r === G.ready.r && b === G.ready.b) return;
       if (r && !G.ready.r) Snd.play('tap');
       G.ready = { r, b };
@@ -2078,6 +2431,11 @@
     }
 
     /* ----- guest: mirror the host ----- */
+    function resetGuestLevers() {
+      P.leverReset(G.s);
+      P.leverReset(myLev);
+      myLv.length = 0;
+    }
     function startGuestGame() {
       G.names = names();
       enterGame('guest', 'b');
@@ -2086,12 +2444,21 @@
       G.s.live = false;
       G.phase = ''; // until the host's first word arrives
       R0.snap = null; R0.offset = null; R0.lastTs = null; R0.hs = ''; R0.shownGoalN = -1; R0.shownGame = 0; R0.lastRecv = performance.now();
+      resetGuestLevers();
       if (R0.lastState) onState(R0.lastState);
     }
     /** Whatever the host wrote, turn it into plain numbers in range (or nothing at all), so a broken or
         hostile host can't crash the page or get text onto it. */
     const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
     const int = (v, lo, hi, d) => (isNum(v) ? clamp(Math.round(v), lo, hi) : d);
+    const LEV_IDLE = P.leverPack(P.create())[0];
+    function cleanLevers(v) {
+      if (!Array.isArray(v) || v.length < 4) return null;
+      return [
+        int(v[0], 0, 0x1ffffff, LEV_IDLE), int(v[1], 0, 0x1ffffff, LEV_IDLE),
+        int(v[2], 0, 0x1ffffff, LEV_IDLE), int(v[3], 0, 0x1ffffff, LEV_IDLE),
+      ];
+    }
     function cleanState(s) {
       if (!s || typeof s !== 'object' || !isNum(s.x) || !isNum(s.y) || !isNum(s.ts)) return null;
       const mx = P.X - P.BALL, my = P.Y - P.BALL, vm = P.K.VMAX * 1.2;
@@ -2102,14 +2469,19 @@
         sr: int(s.sr, 0, TARGET, 0), sb: int(s.sb, 0, TARGET, 0),
         gn: int(s.gn, 0, 1e6, 0), gp: int(s.gp, -1, P.POCKETS.length - 1, -1), n: int(s.n, 1, 1e6, 1),
         er: int(s.er, 0, 100, 100), eb: int(s.eb, 0, 100, 100), tr: int(s.tr, 0, 3, 0),
-        w: s.w === 1 || s.w === true, ts: s.ts, lf: int(s.lf, 0, 0xffffff, 0),
+        w: s.w === 1 || s.w === true, ts: s.ts, ls: cleanLevers(s.ls),
         hs: typeof s.hs === 'string' || isNum(s.hs) ? String(s.hs).slice(0, 24) : '',
       };
     }
-    function cleanSeries(v) { return { r: int(v && v.r, 0, 999, 0), b: int(v && v.b, 0, 999, 0) }; }
+    function cleanSeries(v, withN) {
+      const o = { r: int(v && v.r, 0, 999, 0), b: int(v && v.b, 0, 999, 0) };
+      if (withN) o.n = int(v && v.n, 0, 1e6, 0);
+      return o;
+    }
     function setTiredB(v, now, fromHost) {
       if (G.grip.tired.b === v) return;
-      if (fromHost && now - R0.tiredFlip < 300) return; // the host's news is a moment old: it mustn't undo what just happened here
+      const grace = Math.max(300, R0 ? Math.round((R0.trip || 0) * 2.2) : 300);
+      if (fromHost && now - R0.tiredFlip < grace) return; // the host's news is a moment old: it mustn't undo what just happened here
       G.grip.tired.b = v;
       R0.tiredFlip = now;
       if (v) events.push({ k: 'tired', p: 'b' });
@@ -2123,12 +2495,16 @@
       if (!raw || screen !== 'game' || G.mode !== 'guest') return;
       const s = cleanState(raw);
       if (!s) return;
+      // drop out-of-order delayed snapshots from the same host session (e.g. under jitter)
+      if (s.hs === R0.hs && R0.lastTs != null && s.ts < R0.lastTs && R0.lastTs - s.ts < 2000) return;
       const now = performance.now();
       if (TEST && G.phase === 'play') R0.stall = Math.max(R0.stall || 0, now - R0.lastRecv); // longest wait between snapshots
       R0.lastRecv = now;
       // a new host session (the host reloaded) or a jump in its clock: start the timing over
-      if (s.hs !== R0.hs || R0.lastTs == null || s.ts < R0.lastTs || s.ts > R0.lastTs + 2000) {
+      const newSession = s.hs !== R0.hs;
+      if (newSession || R0.lastTs == null || s.ts < R0.lastTs || s.ts > R0.lastTs + 2000) {
         R0.hs = s.hs; R0.offset = null; R0.snap = null; R0.ex = R0.ey = 0;
+        if (newSession) resetGuestLevers();
       }
       R0.lastTs = s.ts;
       // offset = my clock minus the host's, measured on the quickest snapshots (so it includes the fastest trip)
@@ -2139,7 +2515,9 @@
       // where it is now instead of where it was. If the two clocks disagree wildly, don't guess.
       const trip = R0.offset + (OGNet.now() - now);
       const lead = trip > -60 && trip < 1500 ? clamp(trip, 0, LEAD_MAX) : 0;
+      const tripC = trip > -60 && trip < 1500 ? clamp(trip, 0, 220) : 0;
       R0.lead = R0.snap ? lerp(R0.lead, lead, 0.1) : lead;
+      R0.trip = R0.snap ? lerp(R0.trip, tripC, 0.1) : tripC;
       const age = clamp(now - R0.offset + R0.lead - s.ts, 0, 400) / 1000; // how old this snapshot already is
       const prev = R0.snap;
       R0.snap = s;
@@ -2155,7 +2533,9 @@
       // a new game (rematch)
       if (s.n !== R0.shownGame) {
         epoch++;
-        R0.shownGame = s.n; G.game = s.n; R0.shownGoalN = s.gn; R0.rm = 0; G.phase = '';
+        R0.shownGame = s.n; G.game = s.n; R0.shownGoalN = s.gn; R0.rm = 0; R0.rd = 0; G.phase = '';
+        G.grip.reset(); R0.tiredFlip = 0;
+        resetGuestLevers();
         G.score = { r: s.sr, b: s.sb }; G.goalN = s.gn; G.drop = null; G.glow = null;
         G.firstPoint = s.sr + s.sb === 0;
         paintHUD(true);
@@ -2181,7 +2561,8 @@
         events.push({ k: 'goal', pocket: s.gp, color: P.POCKETS[s.gp].color });
       } else if (moved) paintHUD(true);
       // phase
-      const home = () => { G.drop = null; G.s.x = G.s.y = G.s.vx = G.s.vy = 0; R0.ex = R0.ey = 0; };
+      const home = () => { G.drop = null; G.s.x = G.s.y = G.s.vx = G.s.vy = 0; R0.ex = R0.ey = 0; resetGuestLevers(); };
+      if (G.hold && !s.w) resetGuestLevers();
       if (phase === 'ready' && G.phase !== 'ready') { G.phase = 'ready'; G.t = 0; G.lastCount = -1; home(); clearOverlays(); }
       else if (phase === 'count' && G.phase !== 'count') { G.phase = 'count'; G.t = t; G.lastCount = -1; home(); }
       else if (phase === 'count') G.t = Math.abs(G.t - t) > 0.5 ? t : lerp(G.t, t, 0.3);
@@ -2191,37 +2572,48 @@
       G.hold = s.w;
       guestReady();
     }
-    const scratch = { x: 0, y: 0, vx: 0, vy: 0, lift: [0, 0, 0, 0], live: true, t: 0 };
+    const scratch = P.create();
+    const myLev = P.create();
     function guestFrame(now, dt) {
       if (!R0) return;
       const play = G.phase === 'play' && !G.hold;
-      // my push meter runs locally so my own levers answer instantly
+      // my push meter runs locally using my displayed lever depths so bottoming out answers immediately
       const myHands = P.handsOf('b', heldMask);
       if (play) {
         const was = G.grip.tired.b;
-        G.grip.use('b', myHands, dt);
+        G.grip.use('b', myHands, dt, G.s.press);
         if (was !== G.grip.tired.b) { R0.tiredFlip = now; if (!was) events.push({ k: 'tired', p: 'b' }); }
+      } else if ((G.phase === 'goal' || G.phase === 'count') && G.grip.tired.b && !myHands) {
+        setTiredB(false, now, false);
       }
       const myEff = play && !G.grip.tired.b ? myHands : 0;
       const myMask = P.maskFor('b', myEff);
-      if (!myLv.length || myLv[myLv.length - 1][1] !== myMask) { myLv.push([now, myMask]); if (myLv.length > 24) myLv.shift(); }
+      if (!myLv.length || myLv[myLv.length - 1][1] !== myMask) { myLv.push([now, myMask]); if (myLv.length > 64) myLv.shift(); }
       R0.tilt = play ? (R0.hostMask || 0) | myMask : 0; // what tilts the board
       R0.shown = R0.tilt | (G.phase === 'count' || G.phase === 'ready' ? P.maskFor('b', myHands) : 0); // my knobs also move while we wait
-      P.easeLifts(G.s.lift, R0.tilt, dt);
       if ((G.phase === 'count' || G.phase === 'goal') && !G.hold) G.t += dt;
-      // The marble: take the host's latest word and roll it forward to "now" with the same physics (pegs and
-      // walls included), no more than a short, fixed way ahead. Each new snapshot corrects the guess; the
-      // difference is eased out over a few frames so the marble never jumps.
+      // The marble and levers: take the host's latest snapshot (with full lever state) and roll it forward to
+      // "now" with the same physics (pegs and walls included), no more than a short, fixed way ahead. Each new
+      // snapshot corrects the guess; differences are eased out over a few frames so nothing jumps.
       const l = R0.snap;
-      if (G.phase === 'play' && l && l.p === 1 && R0.offset != null) {
+      if (play && l && l.p === 1 && R0.offset != null) {
         const ahead = clamp(now - R0.offset + R0.lead - l.ts, 0, AHEAD_MAX) / 1000;
         const sc = scratch;
         sc.x = l.x; sc.y = l.y; sc.vx = l.vx; sc.vy = l.vy; sc.live = true;
-        for (let i = 0; i < 4; i++) sc.lift[i] = ((l.lf >> (i * 6)) & 63) / 63;
+        P.leverUnpack(sc, l.ls);
         // the host's levers as of the snapshot, and mine as the host will have heard them by each moment
-        const n = Math.round(ahead / P.K.DT), t0 = now - ahead * 1000 - R0.lead, hm = l.m & 3;
-        for (let i = 0; i < n; i++) if (P.step(sc, hm | myMaskAt(t0 + i * P.K.DT * 1000), P.K.DT) >= 0) break;
-        if (R0.fresh) {
+        const n = Math.round(ahead / P.K.DT), trip = R0.trip || R0.lead;
+        const t0 = l.ts + R0.offset - 2 * trip, hm = l.m & 3;
+        const nRed = Math.min(n, Math.round(0.105 / P.K.DT));
+        let r0 = sc.press[0], r1 = sc.press[1];
+        let i = 0;
+        for (; i < n; i++) {
+          if (i === nRed) { r0 = sc.press[0]; r1 = sc.press[1]; }
+          if (P.step(sc, hm | myMaskAt(t0 + i * P.K.DT * 1000), P.K.DT) >= 0) break;
+        }
+        if (i <= nRed) { r0 = sc.press[0]; r1 = sc.press[1]; }
+        const fresh = R0.fresh;
+        if (fresh) {
           // where the marble would have been drawn without this snapshot, minus where it now says to draw it
           const ex = G.s.x + G.s.vx * dt - sc.x, ey = G.s.y + G.s.vy * dt - sc.y;
           if (Math.hypot(ex, ey) < 140) { R0.ex = ex; R0.ey = ey; } else R0.ex = R0.ey = 0;
@@ -2230,6 +2622,39 @@
         const mx = P.X - P.BALL, my = P.Y - P.BALL;
         G.s.x = clamp(sc.x + R0.ex, -mx, mx); G.s.y = clamp(sc.y + R0.ey, -my, my);
         G.s.vx = sc.vx; G.s.vy = sc.vy;
+        // When one-way trip exceeds LEAD_MAX (e.g. 150 ms), finish rolling Blue's corners to server "now"
+        // using our known myLv history (Red stays capped at 105 ms to avoid release overshoot).
+        if (i === n) {
+          const extraMs = clamp(now - R0.offset + trip - l.ts, 0, 320) - ahead * 1000;
+          if (extraMs > 1) {
+            const en = Math.round((extraMs / 1000) / P.K.DT);
+            const et0 = t0 + n * P.K.DT * 1000;
+            for (let j = 0; j < en; j++) P.easePress(sc, myMaskAt(et0 + j * P.K.DT * 1000), P.K.DT);
+          }
+        }
+        // Host corners (0, 1): track capped-extrapolation target smoothly with a per-frame step cap (<= 0.045)
+        const rt = [r0, r1];
+        for (let c = 0; c < 2; c++) {
+          const next = G.s.press[c] + clamp(rt[c] - G.s.press[c], -0.045, 0.045);
+          G.s.press[c] = (rt[c] === 0 && next < 1e-3) ? 0 : clamp(next, 0, 1);
+        }
+        // Guest's own corners (2, 3): advance locally for instant response, reconcile onto host-anchored sc.press
+        for (let c = 2; c < 4; c++) {
+          myLev.press[c] = G.s.press[c];
+          if (((l.m >> c) & 1) && ((myMask >> c) & 1) && sc.held[c] > 0 && myLev.held[c] > 0 && sc.tap[c] !== myLev.tap[c]) {
+            myLev.tap[c] = sc.tap[c]; myLev.held[c] = sc.held[c];
+          }
+        }
+        P.easePress(myLev, myMask, dt);
+        const mk = 1 - Math.exp(-dt * 15);
+        for (let c = 2; c < 4; c++) {
+          const blend = myLev.press[c] + (sc.press[c] - myLev.press[c]) * mk;
+          const next = G.s.press[c] + clamp(blend - G.s.press[c], -0.04, 0.04);
+          G.s.press[c] = (sc.press[c] === 0 && myLev.press[c] === 0 && next < 1e-3) ? 0 : clamp(next, 0, 1);
+        }
+      } else if (!G.hold) {
+        P.easePress(G.s, 0, dt);
+        P.easePress(myLev, 0, dt);
       }
       // the host went quiet
       const quiet = now - R0.lastRecv;
@@ -2249,10 +2674,16 @@
     function syncRematch() {
       if (!R0 || !modalOpen('win')) return;
       const other = R0.isHost ? R0.guestUid : R0.meta && R0.meta.host;
-      const theirs = !!R0.players[other] && R0.players[other].rm === G.game;
+      const me = rec(R0.uid), op = rec(other);
+      if (me && numEq(me.rm, G.game)) R0.rm = G.game;
+      const mine = R0.rm === G.game;
+      const theirs = !!(op && numEq(op.rm, G.game));
       const btn = $('#rematchBtn');
-      if (btn && !btn.disabled && theirs) btn.textContent = `${nameOf(other)} wants a rematch!`;
-      if (R0.isHost && R0.rm === G.game && theirs) {
+      if (btn) {
+        if (mine) { btn.disabled = true; btn.textContent = 'Waiting for the other player…'; }
+        else if (theirs) btn.textContent = `${nameOf(other)} wants a rematch!`;
+      }
+      if (R0.isHost && mine && theirs) {
         // both in: the next game of the series, straight to the countdown
         G.game++;
         closeAllModals();
@@ -2271,7 +2702,7 @@
       else if (a === 'n-share') share(false);
       else if (a === 'n-copy') share(true);
       else if (a === 'n-find') findNew();
-      else if (a === 'n-wait') closeModal($('#drop'));
+      else if (a === 'n-wait') { if (R0) R0.keptWaiting = true; closeModal($('#drop')); }
     }
     /** the invite: the phone's share sheet where there is one, otherwise the link goes on the clipboard */
     async function share(fromCode) {
@@ -2279,15 +2710,15 @@
       const url = `${location.origin}${location.pathname}?join=${R0.code}`;
       const text = `Play On Guard with me! Join code: ${R0.code}`;
       const done = (t) => { const h = $('#ogHint'); if (fromCode && h) { h.textContent = t; h.classList.add('flash'); } else toastIn(t); say(t); };
-      try { if (navigator.share && touchy) { await navigator.share({ title: 'On Guard', text, url }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+      try { if (!fromCode && navigator.share && touchy) { await navigator.share({ title: 'On Guard', text, url }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
       try { await navigator.clipboard.writeText(fromCode ? url : `${text}\n${url}`); done(fromCode ? 'Invite link copied' : 'Invite link copied. Paste it into a text message.'); } catch (e) { done(url); }
     }
     function leave() {
       cancelAttempt();
-      if (R0) { clearT('seatT'); clearT('hostGoneT'); clearT('dropT'); R0 = null; try { OGNet.leave(); } catch (e) {} }
+      if (R0) { clearT('seatT'); clearT('hostGoneT'); clearT('dropT'); clearT('restoreT'); clearT('startT'); R0 = null; try { OGNet.leave(); } catch (e) {} }
       panel._html = '';
     }
-    return { open, act, leave, hostSend, guestLv, guestFrame, shownMask, rematch, syncRematch, ready, saveSeries, onState, onConn, get room() { return R0; } };
+    return { open, act, leave, hostSend, guestLv, guestFrame, shownMask, rematch, syncRematch, ready, saveSeries, onState, onConn, guestAway, get room() { return R0; } };
   })();
 
   /* ================================================================
@@ -2362,7 +2793,7 @@
   // test hooks (read-only views, plus ball placement when ?test is in the URL)
   window.OG = {
     get state() {
-      return { mode: G.mode, me: G.me, screen, phase: G.phase, t: G.t, score: { ...G.score }, ball: { x: G.s.x, y: G.s.y, vx: G.s.vx, vy: G.s.vy }, lift: G.s.lift.slice(), held: heldMask, mask: G.mask,
+      return { mode: G.mode, me: G.me, screen, phase: G.phase, t: G.t, score: { ...G.score }, ball: { x: G.s.x, y: G.s.y, vx: G.s.vx, vy: G.s.vy }, press: G.s.press.slice(), held: heldMask, mask: G.mask,
         view: L && L.view, theta: L && L.theta, game: G.game, paused: G.paused, hold: G.hold, grip: { ...G.grip.e }, tired: { ...G.grip.tired }, ready: { ...G.ready }, series: { ...G.series }, level: G.level,
         modals: modalStack.map((x) => x.m.id), epoch, knobs: kl.slice() };
     },

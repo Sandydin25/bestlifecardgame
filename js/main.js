@@ -33,23 +33,28 @@
   settlePill();
   document.fonts && document.fonts.ready.then(settlePill);
   addEventListener('resize', settlePill);
+  let ogGoing = false, ogTimers = [];
   const goOnGuard = (e) => {
     const a = e.target.closest('a[href="onguard/"]');
     if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
+    if (ogGoing) return; // a second tap mustn't queue a second trip (it would fire again after Back)
+    ogGoing = true;
+    setSheet(false);
     const fromSwitch = sw.contains(a) && sw.classList.contains('has-og');
     if (fromSwitch) { sw.classList.add('go'); placePill(swOG); }
     if (document.fonts) document.fonts.load("italic 900 80px 'OG Barlow Condensed'").catch(() => {});
     try { sessionStorage.setItem('og-from', 'bestlife'); } catch (err) {}
-    setTimeout(() => {
+    ogTimers.push(setTimeout(() => {
       const w = BL.el('div', 'og-wipe', '<i class="r"><b>ON</b></i><i class="b"><b>GUARD</b></i>');
       w.setAttribute('aria-hidden', 'true');
       document.body.append(w);
-      setTimeout(() => { location.href = a.href; }, 640);
-    }, fromSwitch ? 420 : 0);
+      ogTimers.push(setTimeout(() => { location.href = a.href; }, 640));
+    }, fromSwitch ? 420 : 0));
   };
   document.addEventListener('click', goOnGuard);
-  addEventListener('pageshow', (e) => { if (e.persisted) { document.querySelectorAll('.og-wipe').forEach((w) => w.remove()); sw.classList.remove('go'); settlePill(); } });
+  addEventListener('pagehide', () => { ogTimers.forEach(clearTimeout); ogTimers = []; });
+  addEventListener('pageshow', (e) => { if (e.persisted) { ogTimers.forEach(clearTimeout); ogTimers = []; ogGoing = false; document.querySelectorAll('.og-wipe').forEach((w) => w.remove()); sw.classList.remove('go'); settlePill(); } });
   // warm up On Guard's display face as soon as someone points at the tab, so its wipe text never swaps font mid-slide
   if (swOG) swOG.addEventListener('pointerenter', () => document.fonts && document.fonts.load("italic 900 80px 'OG Barlow Condensed'").catch(() => {}), { once: true });
   // coming back from On Guard: drop the cover class once its slide-out is done
