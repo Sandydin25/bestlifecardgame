@@ -59,6 +59,9 @@ a{color:inherit}
 
 /* ---------- the board ---------- */
 .stage{position:absolute;inset:0;pointer-events:none;transition:opacity .5s}
+.cv-gl{position:absolute;inset:0;width:100%;height:100%;display:none;pointer-events:none}
+.app.gl .cv-gl{display:block}
+.app.gl .table{display:none}
 .table{position:absolute;left:0;top:0;transform-origin:50% 50%;will-change:transform}
 .pitch,.spin,.board{position:absolute;left:50%;top:50%;transform-style:preserve-3d}
 .pitch{width:0;height:0}
@@ -66,12 +69,12 @@ a{color:inherit}
 .board{position:absolute;left:50%;top:50%;transform-style:preserve-3d}
 .tray{position:absolute;inset:0;will-change:transform}
 .well{position:absolute;inset:0;transform-style:preserve-3d}
-.well-f{position:absolute;background:#a9b0bd;backface-visibility:hidden}
+.well-f{position:absolute;background:#dce0e8;backface-visibility:hidden}
 .well-w{position:absolute;backface-visibility:hidden}
-.well-n{background:linear-gradient(180deg,#c4cad4,#a9b0bd)}
-.well-s{background:linear-gradient(0deg,#c4cad4,#a9b0bd)}
-.well-l{background:linear-gradient(90deg,#c4cad4,#a9b0bd)}
-.well-r{background:linear-gradient(270deg,#c4cad4,#a9b0bd)}
+.well-n{background:linear-gradient(180deg,#e4e8ef,#cfd5df)}
+.well-s{background:linear-gradient(0deg,#e4e8ef,#cfd5df)}
+.well-l{background:linear-gradient(90deg,#e4e8ef,#cfd5df)}
+.well-r{background:linear-gradient(270deg,#e4e8ef,#cfd5df)}
 .cv{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
 .side{position:absolute;background:linear-gradient(90deg,#eceff4,#c7cdd8)}
 .side-n,.side-s{background:linear-gradient(180deg,#eceff4,#c7cdd8)}
@@ -721,3 +724,31 @@ html.from-bl .og-cover{display:block}
 .bl-wipe .n{background:var(--bl-indigo);clip-path:polygon(14% 0,100% 0,100% 100%,0 100%);animation:bl-in .46s .08s var(--inout) both}
 .bl-wipe .n b{font:400 clamp(60px,15vw,170px)/1 'Anton','Impact',var(--hl);color:var(--bl-yellow);letter-spacing:.01em;transform:skewX(-9deg);animation:fade-in .3s .3s both}
 @keyframes bl-in{from{transform:translateX(105%)}}
+
+/* ---------- the Best Life | On Guard switch stays in the same corner as on the Best Life page ----------
+   Best Life's nav is fixed: the switch sits 14px down and clamp(16px, 4vw, 44px) in, 222 x 44 (175 x 38 on phones).
+   The title screen pads itself differently per layout, so the topbar cancels that padding out. */
+.title .topbar{--gs-in:clamp(16px,4vw,44px);width:auto;max-width:none;min-height:44px;align-self:stretch;justify-self:stretch;
+  margin:6px calc(var(--gs-in) - 16px) 0 calc(var(--gs-in) - 16px)}
+@media (orientation:landscape) and (max-height:540px){.title .topbar{margin-top:10px}}
+@media (min-width:900px) and (min-height:600px){
+  /* the title screen spans the whole window (same content width as before) so the switch isn't clipped on wide screens */
+  .app[data-screen="title"] .title,.app[data-exit="title"] .title{--gs-side:max(0px,(100vw - 1320px) / 2);max-width:none;margin:0;
+    padding-left:calc(var(--sal) + 40px + var(--gs-side));padding-right:calc(var(--sar) + 40px + var(--gs-side))}
+  .title .topbar{margin-left:calc(var(--gs-in) - 40px - var(--gs-side));margin-right:calc(var(--gs-in) - 40px - var(--gs-side))}
+}
+.gs-bl{min-width:106px;justify-content:center}
+.gs-og{min-width:109px;justify-content:center}
+@media (max-width:480px){
+  .game-switch{padding:3px}
+  .gs-tab{height:32px;padding:0 11px;font-size:17px}
+  .gs-pill{top:3px;bottom:3px}
+  .gs-bl{min-width:83px}
+  .gs-og{min-width:86px}
+  .title .topbar{margin-top:4px}
+}
+@media (max-width:359px){
+  .gs-tab{padding:0 8px;font-size:15px}
+  .gs-bl{min-width:70px}
+  .gs-og{min-width:72px}
+}

@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="On Guard">
 <meta property="og:title" content="On Guard · Red vs Blue">
-<meta property="og:description" content="Sandy Kraemer’s first invention, the tilting marble game, now on your phone. Tilt the board, roll the marble into your color.">
+<meta property="og:description" content="Sandy Kraemer’s tilting marble game, now on your phone. Tilt the board, roll the marble into your color.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://bestlifecards.com/onguard/">
 <meta property="og:image" content="https://bestlifecards.com/onguard/share.jpg">
@@ -21,7 +21,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23fff'/%3E%3Cpath d='M9 10h30l10 11-10 11H5z' fill='%23ff2a3d'/%3E%3Cpath d='M25 32h34l-4 22H25L15 43z' fill='%231f6bff'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="preload" href="fonts/BarlowCondensed-900i.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="onguard.css?v=5">
+<link rel="stylesheet" href="onguard.css?v=6">
 <script>try{if(sessionStorage.getItem('og-from')==='bestlife')document.documentElement.classList.add('from-bl')}catch(e){}</script>
 </head>
 <body>
@@ -38,6 +38,7 @@
 
   <!-- the board (title-screen demo and the game) -->
   <div id="stage" class="stage" aria-hidden="true">
+    <canvas id="cvGL" class="cv-gl" aria-hidden="true"></canvas>
     <div id="table" class="table">
       <div id="pitch" class="pitch">
         <div id="spin" class="spin">
@@ -76,7 +77,6 @@
       <button class="icon-btn sound-btn" type="button" data-act="sound" aria-label="Sound on" aria-pressed="true"></button>
     </header>
     <div class="hero">
-      <p class="kicker"><span class="k-num">No.01</span><span class="k-rule"></span><span>Sandy Kraemer’s first invention</span></p>
       <h1 class="logo" id="logoText" aria-label="On Guard">
         <span class="lg lg-on"><span class="lg-w">ON</span></span>
         <span class="lg lg-guard"><span class="lg-w">GUARD</span></span>
@@ -232,7 +232,7 @@
         </svg>
         <div class="shop-t">
           <h3 id="shopH">From Sandy’s workshop</h3>
-          <p>On Guard was Sandy Kraemer’s first invention. Parker Brothers licensed and published it as a tilting game for 2 to 4 players. He went on to invent more games, including Best Life.</p>
+          <p>Sandy Kraemer invented On Guard. Parker Brothers licensed and published it as a tilting game for 2 to 4 players. He went on to invent more games, including Best Life.</p>
         </div>
       </aside>
       <p class="fine">This web version is for 2 players, in red and blue.</p>
@@ -246,7 +246,8 @@
 <div class="og-cover" id="ogCover" aria-hidden="true"><i class="r"><b>ON</b></i><i class="b"><b>GUARD</b></i></div>
 <noscript><p style="position:fixed;inset:auto 0 0;padding:16px;background:#fff;color:#000;text-align:center">On Guard needs JavaScript to play.</p></noscript>
 <script src="../js/config.js"></script>
-<script src="physics.js?v=5"></script>
-<script src="game.js?v=5"></script>
+<script src="physics.js?v=6"></script>
+<script src="board3d.js?v=6"></script>
+<script src="game.js?v=6"></script>
 </body>
 </html>

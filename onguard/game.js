@@ -25,6 +25,7 @@
   const HLF = "'Barlow Condensed', 'Arial Narrow', sans-serif";
   const touchy = matchMedia('(pointer: coarse)').matches || (navigator.maxTouchPoints > 0 && matchMedia('(hover: none)').matches);
   const TEST = /[?&]test\b/.test(location.search);
+  const NOGL = /[?&]nogl\b/.test(location.search);
   if (!touchy) app.classList.add('no-touch');
   const store = {
     get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
@@ -236,20 +237,24 @@
              D  one player per device, my end at the bottom (phones in portrait, computers)
              E  one player per device on a landscape phone: my end on the left
      ================================================================ */
-  const EXT_X = 600, EXT_Y = 392; // board's visible half-size in units (frame + levers)
-  const CANVAS_X = 644, CANVAS_Y = 420; // drawn area (room for glows and compensated tabs)
-  const FRAME_X = 544, FRAME_Y = 384;
-  const TRAY_X = 526, TRAY_Y = 366; // frame's inner opening / tray outer rim
+  const RIM_LIP = 12; // flat white rim lip continuing outward from P.RIM_X / P.RIM_Y to fixed frame
+  const TRAY_X = P.RIM_X + RIM_LIP, TRAY_Y = P.RIM_Y + RIM_LIP; // frame's inner opening / tray outer rim
+  const FRAME_WALL = 16; // slim outer frame wall like the real box
+  const FRAME_X = TRAY_X + FRAME_WALL, FRAME_Y = TRAY_Y + FRAME_WALL;
+  const TAB_REACH = P.LEVER_W + 4; // lever tab protrusion past FRAME_X
+  const EXT_X = FRAME_X + TAB_REACH + 8, EXT_Y = FRAME_Y + 8; // board's visible half-size in units (frame + levers)
+  const CANVAS_X = EXT_X + 44, CANVAS_Y = EXT_Y + 28; // drawn area (room for glows and compensated tabs)
   const DROP_V = 90; // visual tray drop in board units at full corner press
   const FRAME_DEP = 94; // outer frame wall depth in board units (deeper than DROP_V)
   const els = {
-    stage: $('#stage'), table: $('#table'), pitch: $('#pitch'), spin: $('#spin'), board: $('#board'), shadow: $('#shadow'),
+    stage: $('#stage'), gl: $('#cvGL'), table: $('#table'), pitch: $('#pitch'), spin: $('#spin'), board: $('#board'), shadow: $('#shadow'),
     well: $('#well'), tray: $('#tray'), base: $('#cvBase'), live: $('#cvLive'), frame: $('#cvFrame'),
     stems: [0, 1, 2, 3].map((c) => $(`.side-slot[data-c="${c}"] .slot-stem`)),
     fx: $('#fx'), slot: $('#titleSlot'), flash: $('#flash'),
     zones: $('#zones'), pads: $('#pads'), hud: $('#hud'), count: $('#count'), banner: $('#banner'), toast: $('#toast'),
     badge: { r: $('#badge-r'), b: $('#badge-b') }, bug: $('#bug'), series: $('#series'), ready: $('#ready'), tips: $('#tips'), menuBtn: $('#menuBtn'), hudSound: $('#hudSound'), codeTag: $('#codeTag'),
   };
+  let B3 = null, lastL3 = null; // 3D WebGL board renderer (null in CSS fallback)
   let L = null; // current layout
   let stemTravel = 0;
 
@@ -290,8 +295,8 @@
     const pitchSpan = (pitch, rot) => {
       const p = pitch * DEG, cp = Math.cos(p), sp = Math.sin(p);
       const pv = (v0, z0) => { const vp = v0 * cp - z0 * sp, zp = v0 * sp + z0 * cp; return vp * distU / (distU - zp); };
-      const yTop = rot ? -(FRAME_X + 48) : -FRAME_Y;
-      const yBot = rot ? (FRAME_X + 48) : FRAME_Y;
+      const yTop = rot ? -(FRAME_X + TAB_REACH) : -FRAME_Y;
+      const yBot = rot ? (FRAME_X + TAB_REACH) : FRAME_Y;
       const zBot = rot ? -(DROP_V + 10) : -FRAME_DEP;
       return { vTop: pv(yTop, 0), vBot: pv(yBot, zBot) };
     };
@@ -393,6 +398,13 @@
     lastTrayT = ''; lastStemT.fill(''); liveDirty = 30;
     const S = L.S;
     const persp = Math.round(Math.max(EXT_X * 2 * S, 300) * 2.1);
+    if (B3) {
+      const nextL3 = { vw: L.vw, vh: L.vh, cx: L.cx, cy: L.cy, S, theta: L.theta, pitch: L.pitch, persp, dpr: Math.min(window.devicePixelRatio || 1, 2) };
+      B3.layout(nextL3, animate ? lastL3 : null);
+      lastL3 = nextL3;
+      placeUI();
+      return;
+    }
     const t = els.table.style;
     t.left = L.cx + 'px'; t.top = L.cy + 'px';
     t.perspective = persp + 'px';
@@ -409,12 +421,12 @@
     Object.assign(sides[2].style, { left: ox - fx + 'px', top: oy - fy + 'px', width: dep + 'px', height: 2 * fy + 'px', transformOrigin: '0 50%', transform: 'rotateY(90deg)' });
     Object.assign(sides[3].style, { left: ox + fx + 'px', top: oy - fy + 'px', width: dep + 'px', height: 2 * fy + 'px', transformOrigin: '0 50%', transform: 'rotateY(90deg)' });
     // vertical lever slots in the two end walls (.side-w, .side-e): local x=0 is top rim, x=dep is bottom
-    const slLen = (FRAME_DEP - 8) * S, slH = 28 * S, stW = 10 * S, stH = 22 * S;
+    const slLen = (FRAME_DEP - 8) * S, slH = P.LEVER_W * 0.4 * S, stW = 10 * S, stH = P.LEVER_W * 0.3 * S;
     stemTravel = Math.max(0, slLen - stW - 3 * S);
     for (let c = 0; c < 4; c++) {
       const slot = els.stems[c].parentNode;
       const sy = P.CORNERS[c][1];
-      Object.assign(slot.style, { left: 1 * S + 'px', top: fy + sy * 300 * S - slH / 2 + 'px', width: slLen + 'px', height: slH + 'px' });
+      Object.assign(slot.style, { left: 1 * S + 'px', top: fy + sy * P.LEVER_Y * S - slH / 2 + 'px', width: slLen + 'px', height: slH + 'px' });
       Object.assign(els.stems[c].style, { left: 1.5 * S + 'px', top: (slH - stH) / 2 + 'px', width: stW + 'px', height: stH + 'px' });
     }
     // inner well: shaded inside of the fixed white plastic frame (visible in the gap when the tray sinks)
@@ -579,11 +591,16 @@
       ctx.lineTo(x0, y0 + r); ctx.arcTo(x0, y0, x0 + r, y0, r);
       ctx.closePath();
     }
+    const TRAY_R = P.RIM_R, FRAME_R = P.RIM_R + 4;
     const floorPath = (c) => rrect(c, -P.X, -P.Y, P.X, P.Y, P.CORNER);
-    const trayPath = (c) => rrect(c, -TRAY_X, -TRAY_Y, TRAY_X, TRAY_Y, 36);
+    const trayPath = (c) => rrect(c, -TRAY_X, -TRAY_Y, TRAY_X, TRAY_Y, TRAY_R);
     function pocketBox(p) {
-      const xs = p.pts.map((q) => q[0]), ys = p.pts.map((q) => q[1]);
-      return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
+      const xa = p.side * P.MOUTH, xb = p.side * (P.BACK - P.WALL);
+      const ya = p.v * (P.IN + P.WALL), yb = p.v * (P.OUT - P.WALL);
+      return { x0: Math.min(xa, xb), x1: Math.max(xa, xb), y0: Math.min(ya, yb), y1: Math.max(ya, yb) };
+    }
+    function guardOf(p) {
+      return P.PEGS.reduce((a, b) => (Math.hypot(b.x - p.hx, b.y - p.hy) < Math.hypot(a.x - p.hx, a.y - p.hy) ? b : a));
     }
 
     /** Fixed outer frame ring (transparent opening over the tray). */
@@ -596,14 +613,16 @@
       // bright white plastic outer frame, lit from the upper left
       const g = c.createLinearGradient(-lx * FRAME_X, -ly * FRAME_Y, lx * FRAME_X, ly * FRAME_Y);
       g.addColorStop(0, '#ffffff'); g.addColorStop(0.5, '#f2f4f7'); g.addColorStop(1, '#d9dee6');
-      rrect(c, -FRAME_X, -FRAME_Y, FRAME_X, FRAME_Y, 36); c.fillStyle = g; c.fill();
+      rrect(c, -FRAME_X, -FRAME_Y, FRAME_X, FRAME_Y, FRAME_R); c.fillStyle = g; c.fill();
       c.lineWidth = 2; c.strokeStyle = 'rgba(14,22,40,.2)'; c.stroke();
-      rrect(c, -FRAME_X + 3, -FRAME_Y + 3, FRAME_X - 3, FRAME_Y - 3, 33); c.lineWidth = 2.5; c.strokeStyle = 'rgba(255,255,255,.95)'; c.stroke();
+      rrect(c, -FRAME_X + 3, -FRAME_Y + 3, FRAME_X - 3, FRAME_Y - 3, Math.max(2, FRAME_R - 2.5)); c.lineWidth = 2.2; c.strokeStyle = 'rgba(255,255,255,.95)'; c.stroke();
       // recessed lever slot notches on the frame's outer edges where each stem passes
+      const slotHalf = P.LEVER_W * 0.19;
+      const notchIn = Math.min(8, FRAME_WALL * 0.52);
       for (const [sx, sy] of P.CORNERS) {
-        const x0 = sx > 0 ? FRAME_X - 8 : -FRAME_X;
-        const x1 = sx > 0 ? FRAME_X : -FRAME_X + 8;
-        const y0 = sy * 300 - 14, y1 = sy * 300 + 14;
+        const x0 = sx > 0 ? FRAME_X - notchIn : -FRAME_X;
+        const x1 = sx > 0 ? FRAME_X : -FRAME_X + notchIn;
+        const y0 = sy * P.LEVER_Y - slotHalf, y1 = sy * P.LEVER_Y + slotHalf;
         const ng = c.createLinearGradient(sx > 0 ? x0 : x1, 0, sx > 0 ? x1 : x0, 0);
         ng.addColorStop(0, 'rgba(14,22,40,.24)'); ng.addColorStop(1, 'rgba(14,22,40,.36)');
         rrect(c, x0, y0, x1, y1, 2);
@@ -619,14 +638,17 @@
       }
       // team rails: Red's end on the left, Blue's on the right
       c.lineCap = 'round';
+      const railX = (FRAME_X + TRAY_X) * 0.5;
+      const railY = P.LEVER_Y - P.LEVER_W * 0.65;
       for (const [side, col] of [[-1, 'r'], [1, 'b']]) {
-        const x = side * (FRAME_X - 9);
-        c.beginPath(); c.moveTo(x, -236); c.lineTo(x, 236); c.lineWidth = 7; c.strokeStyle = COLOR[col]; c.stroke();
+        const x = side * railX;
+        c.beginPath(); c.moveTo(x, -railY); c.lineTo(x, railY); c.lineWidth = 6; c.strokeStyle = COLOR[col]; c.stroke();
       }
       // technical tick marks along the long rails
       c.lineCap = 'butt'; c.lineWidth = 1.6; c.strokeStyle = 'rgba(14,22,40,.2)';
-      for (let x = -450; x <= 450; x += 50) {
-        const len = x === 0 ? 9 : 5;
+      const tickStep = P.X / 10, tickMax = P.X - tickStep;
+      for (let x = -tickMax; x <= tickMax + 0.01; x += tickStep) {
+        const len = Math.abs(x) < 1 ? 8 : 4.5;
         for (const sy of [-1, 1]) { c.beginPath(); c.moveTo(x, sy * (FRAME_Y - 4)); c.lineTo(x, sy * (FRAME_Y - 4 - len)); c.stroke(); }
       }
       // punch out the inner opening so the tilting tray and shaded well show through
@@ -645,50 +667,53 @@
       c.clearRect(0, 0, els.base.width, els.base.height);
       tf(c);
       const lx = light.x, ly = light.y;
-      // rim and the sloped inner wall of the tray
+      // rim and the sloped inner cove of the tray
       let g = c.createLinearGradient(-lx * TRAY_X, -ly * TRAY_Y, lx * TRAY_X, ly * TRAY_Y);
       g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#e8ebf0');
       trayPath(c); c.fillStyle = g; c.fill();
       c.lineWidth = 1.6; c.strokeStyle = 'rgba(14,22,40,.16)'; c.stroke();
-      g = c.createLinearGradient(-lx * 520, -ly * 360, lx * 520, ly * 360);
-      g.addColorStop(0, '#dde1e8'); g.addColorStop(1, '#f9fafb');
-      rrect(c, -518, -358, 518, 358, 46); c.fillStyle = g; c.fill();
+      g = c.createLinearGradient(-lx * P.RIM_X, -ly * P.RIM_Y, lx * P.RIM_X, ly * P.RIM_Y);
+      g.addColorStop(0, '#dfe3ea'); g.addColorStop(1, '#fafbfc');
+      rrect(c, -P.RIM_X, -P.RIM_Y, P.RIM_X, P.RIM_Y, P.CORNER + Math.round((P.RIM_X - P.X) * 0.45)); c.fillStyle = g; c.fill();
       // the floor
       c.save();
       floorPath(c); c.clip();
-      g = c.createRadialGradient(-lx * 140, -ly * 140, 40, 0, 0, 700);
-      g.addColorStop(0, '#fdfdfe'); g.addColorStop(1, '#e8ebf0');
+      g = c.createRadialGradient(-lx * P.X * 0.28, -ly * P.Y * 0.4, P.BALL * 2, 0, 0, Math.hypot(P.X, P.Y) * 1.15);
+      g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#f3f5f9');
       c.fillStyle = g; c.fillRect(-P.X, -P.Y, 2 * P.X, 2 * P.Y);
-      // court markings: center line, start circle, dashed guard lines
-      c.lineWidth = 2; c.strokeStyle = 'rgba(14,22,40,.08)';
-      c.beginPath(); c.moveTo(0, -P.Y); c.lineTo(0, -62); c.moveTo(0, 62); c.lineTo(0, P.Y); c.stroke();
-      c.beginPath(); c.arc(0, 0, 62, 0, TAU); c.stroke();
-      c.beginPath(); c.arc(0, 0, 4, 0, TAU); c.fillStyle = 'rgba(14,22,40,.14)'; c.fill();
-      c.setLineDash([10, 9]); c.strokeStyle = 'rgba(14,22,40,.1)';
-      for (const sx of [-1, 1]) { c.beginPath(); c.moveTo(sx * 396, -126); c.lineTo(sx * 396, 126); c.stroke(); }
-      c.setLineDash([]);
+      // clear start disc (P.DISC_R) and raised centre cup (P.CUP_R)
+      g = c.createRadialGradient(-lx * P.DISC_R * 0.25, -ly * P.DISC_R * 0.25, P.CUP_R * 0.5, 0, 0, P.DISC_R);
+      g.addColorStop(0, 'rgba(255,255,255,.16)'); g.addColorStop(0.8, 'rgba(210,218,230,.06)'); g.addColorStop(1, 'rgba(180,190,206,.14)');
+      c.beginPath(); c.arc(0, 0, P.DISC_R, 0, TAU); c.fillStyle = g; c.fill();
+      c.lineWidth = 1.6; c.strokeStyle = 'rgba(130,142,160,.36)'; c.stroke();
+      c.beginPath(); c.arc(0, 0, P.CUP_R, 0, TAU); c.lineWidth = 2.4; c.strokeStyle = 'rgba(255,255,255,.7)'; c.stroke();
+      c.beginPath(); c.arc(0, 0, P.CUP_R * 0.88, 0, TAU); c.lineWidth = 1.4; c.strokeStyle = 'rgba(130,142,160,.38)'; c.stroke();
       // the floor inside each pocket is tinted with its color
       for (const p of P.POCKETS) { const b = pocketBox(p); c.fillStyle = TINT[p.color]; c.fillRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0); }
-      // each pocket's team shape, printed on the floor in front of its mouth: an arrowhead pointing in for Red, a ring for Blue
+      // each pocket's team shape, printed on open floor on the centre side of its guard peg
       for (const p of P.POCKETS) {
-        const mx = p.side * 384, my = p.hy;
+        const guard = guardOf(p);
+        const mx = guard.x - p.side * (P.PEG + 26), my = p.hy;
+        const sz = 8.4;
         c.save();
         c.translate(mx, my);
-        c.globalAlpha = 0.5;
+        c.globalAlpha = 0.55;
         if (p.color === 'r') {
           c.scale(p.side, 1);
-          c.beginPath(); c.moveTo(-11, -13); c.lineTo(12, 0); c.lineTo(-11, 13); c.closePath();
+          c.beginPath(); c.moveTo(-sz * 0.9, -sz * 1.05); c.lineTo(sz * 1.05, 0); c.lineTo(-sz * 0.9, sz * 1.05); c.closePath();
           c.fillStyle = COLOR.r; c.fill();
         } else {
-          c.beginPath(); c.arc(0, 0, 10.5, 0, TAU);
-          c.lineWidth = 5.5; c.strokeStyle = COLOR.b; c.stroke();
+          c.beginPath(); c.arc(0, 0, sz * 0.88, 0, TAU);
+          c.lineWidth = Math.max(3.2, sz * 0.48); c.strokeStyle = COLOR.b; c.stroke();
         }
         c.restore();
       }
-      // a faint wordmark printed near each long wall
-      c.font = `italic 900 34px ${HLF}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = 'rgba(14,22,40,.06)';
-      c.fillText('ON GUARD', 0, -300);
-      c.save(); c.rotate(Math.PI); c.fillText('ON GUARD', 0, -300); c.restore();
+      // a faint wordmark printed in the open band between outer center pegs and long walls
+      const centerPegOuterY = P.PEGS.filter((q) => q.x === 0).reduce((m, q) => Math.max(m, Math.abs(q.y)), 0) + P.PEG;
+      const wordY = (centerPegOuterY + P.Y) * 0.5;
+      c.font = `italic 900 32px ${HLF}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = 'rgba(14,22,40,.06)';
+      c.fillText('ON GUARD', 0, -wordY);
+      c.save(); c.rotate(Math.PI); c.fillText('ON GUARD', 0, -wordY); c.restore();
       // soft inner shadow where the floor curves up into the wall
       c.shadowColor = 'rgba(18,28,52,.32)'; c.shadowBlur = 22 * k; c.shadowOffsetX = lx * 7 * k; c.shadowOffsetY = ly * 7 * k;
       c.beginPath(); c.rect(-P.X - 200, -P.Y - 200, 2 * P.X + 400, 2 * P.Y + 400);
@@ -809,13 +834,17 @@
       s.fillStyle = g; s.fillRect(0, 0, ss, ss);
     }
 
-    const KNOB_PAD = 44, KNOB_W = 42 + KNOB_PAD * 2, KNOB_H = 70 + KNOB_PAD * 2;
+    const TAB_X = P.LEVER_W * 0.88, TAB_Y = P.LEVER_W, TAB_R = Math.round(P.LEVER_W * 0.14);
+    const TAB_CX = FRAME_X + TAB_REACH - TAB_X * 0.5;
+    const KNOB_PAD = 44, KNOB_W = TAB_X + KNOB_PAD * 2, KNOB_H = TAB_Y + KNOB_PAD * 2;
     let knobSpr = null;
     function paintKnob(c, col, mode) {
-      const w = 42, h = 70, rr = 14, lx = light.x, ly = light.y;
-      const sx = col === 'r' ? -1 : 1; // stem extends inward (-sx) into the frame wall, staying outside TRAY_X
-      const stemX0 = sx < 0 ? w / 2 - 4 : -w / 2 - 22;
-      const stemX1 = sx < 0 ? w / 2 + 22 : -w / 2 + 4;
+      const w = TAB_X, h = TAB_Y, rr = TAB_R, lx = light.x, ly = light.y;
+      const sx = col === 'r' ? -1 : 1; // stem extends inward (-sx) into the frame wall
+      const stemReach = TAB_REACH - TAB_X + 8;
+      const stemX0 = sx < 0 ? w / 2 - 4 : -w / 2 - stemReach;
+      const stemX1 = sx < 0 ? w / 2 + stemReach : -w / 2 + 4;
+      const stemHalf = P.LEVER_W * 0.15;
       if (mode === 'halo') { // just the colored glow; the tab itself is drawn over it
         c.shadowColor = COLOR[col]; c.shadowBlur = 28 * k;
         rrect(c, -w / 2 + 2, -h / 2 + 2, w / 2 - 2, h / 2 - 2, rr); c.fillStyle = COLOR[col]; c.fill(); c.fill();
@@ -824,9 +853,9 @@
       const pressed = mode === 'down' || mode === 'bot';
       // stem connecting the lever tab into the frame slot
       c.fillStyle = COLOR_D[col];
-      rrect(c, stemX0, -11, stemX1, 11, 3); c.fill();
+      rrect(c, stemX0, -stemHalf, stemX1, stemHalf, 3); c.fill();
       c.fillStyle = 'rgba(255,255,255,.22)';
-      c.fillRect(stemX0 + 2, -8, stemX1 - stemX0 - 4, 4);
+      c.fillRect(stemX0 + 2, -stemHalf + 3, stemX1 - stemX0 - 4, 4);
       // body (darker underside) with drop shadow: tighter & shorter when pressed down closer to the table
       c.shadowColor = pressed ? 'rgba(18,28,52,.46)' : 'rgba(18,28,52,.35)';
       c.shadowBlur = (pressed ? 3 : 12) * k;
@@ -836,36 +865,37 @@
       c.shadowColor = 'transparent'; c.shadowBlur = 0; c.shadowOffsetX = 0; c.shadowOffsetY = 0;
       const g = c.createLinearGradient(-lx * w * 0.6, -ly * h * 0.6, lx * w * 0.6, ly * h * 0.6);
       g.addColorStop(0, COLOR_L[col]); g.addColorStop(0.4, COLOR[col]); g.addColorStop(1, COLOR_D[col]);
-      rrect(c, -w / 2 + 1.5, -h / 2 + 1.5, w / 2 - 1.5, h / 2 - 3, rr - 2); c.fillStyle = g; c.fill();
+      rrect(c, -w / 2 + 1.5, -h / 2 + 1.5, w / 2 - 1.5, h / 2 - 3, Math.max(2, rr - 2)); c.fillStyle = g; c.fill();
       // grip ridges
       c.lineWidth = 2; c.lineCap = 'round';
-      for (const d of [-11, 0, 11]) {
-        c.beginPath(); c.moveTo(-10, d + 1); c.lineTo(10, d + 1); c.strokeStyle = 'rgba(0,0,0,.18)'; c.stroke();
-        c.beginPath(); c.moveTo(-10, d); c.lineTo(10, d); c.strokeStyle = 'rgba(255,255,255,.4)'; c.stroke();
+      const rStep = h * 0.16, rHalf = w * 0.24;
+      for (const d of [-rStep, 0, rStep]) {
+        c.beginPath(); c.moveTo(-rHalf, d + 1); c.lineTo(rHalf, d + 1); c.strokeStyle = 'rgba(0,0,0,.18)'; c.stroke();
+        c.beginPath(); c.moveTo(-rHalf, d); c.lineTo(rHalf, d); c.strokeStyle = 'rgba(255,255,255,.4)'; c.stroke();
       }
       // gloss
-      rrect(c, -w / 2 + 5, -h / 2 + 4, w / 2 - 5, -h / 2 + 18, 8); c.fillStyle = 'rgba(255,255,255,.3)'; c.fill();
+      rrect(c, -w / 2 + 5, -h / 2 + 4, w / 2 - 5, -h / 2 + 18, 6); c.fillStyle = 'rgba(255,255,255,.3)'; c.fill();
       if (pressed) {
         // darker team overlay when pressed down so quarter / half / three-quarter depths read clearly
         c.save(); c.globalAlpha = 0.36; c.fillStyle = COLOR_DD[col];
-        rrect(c, stemX0, -11, stemX1, 11, 3); c.fill();
+        rrect(c, stemX0, -stemHalf, stemX1, stemHalf, 3); c.fill();
         rrect(c, -w / 2, -h / 2, w / 2, h / 2, rr); c.fill();
         c.restore();
       }
       if (mode === 'bot') {
         // bright lock rim when bottomed out
-        rrect(c, -w / 2 + 1.5, -h / 2 + 1.5, w / 2 - 1.5, h / 2 - 1.5, rr - 1);
+        rrect(c, -w / 2 + 1.5, -h / 2 + 1.5, w / 2 - 1.5, h / 2 - 1.5, Math.max(2, rr - 1));
         c.lineWidth = 2.4; c.strokeStyle = 'rgba(255,255,255,.82)'; c.stroke();
       }
       if (mode === 'tired') {
         c.fillStyle = 'rgba(236,238,242,.68)';
-        rrect(c, stemX0, -11, stemX1, 11, 3); c.fill();
+        rrect(c, stemX0, -stemHalf, stemX1, stemHalf, 3); c.fill();
         rrect(c, -w / 2, -h / 2, w / 2, h / 2, rr); c.fill();
       }
     }
-    function knob(c, i, press, held, tired, glow, tray) {
+    function knob(c, i, ownPress, depth, held, tired, glow, tray) {
       const [sx, sy] = P.CORNERS[i], spr = knobSpr[P.OWNER[i]];
-      let cx = sx * (FRAME_X + 27), cy = sy * 300;
+      let cx = sx * TAB_CX, cy = sy * P.LEVER_Y;
       if (!L.pitch && tray) {
         // top-down views: compensate outward on the sunken tray plane so perspective never pulls the tab under the frame
         const dist = eye.h, f0 = dist / (dist + tray.z0U);
@@ -877,32 +907,33 @@
         cx = px * cry + py * sry * srx - pz * sry * crx;
         cy = py * crx + pz * srx;
       }
-      const bot = !tired && press >= (P.K && P.K.BOTTOM != null ? P.K.BOTTOM : 0.97);
-      const sc = 1 - press * (L.pitch ? 0.13 : 0.09); // smaller when pressed down away from the viewer
+      const disp = Math.max(ownPress, depth);
+      const bot = !tired && ownPress >= (P.K && P.K.BOTTOM != null ? P.K.BOTTOM : 0.97);
+      const sc = 1 - disp * (L.pitch ? 0.13 : 0.09); // smaller when pressed down away from the viewer
       const kw = KNOB_W * sc, kh = KNOB_H * sc, x = cx - kw / 2, y = cy - kh / 2;
       if (!tired) {
         if (bot) {
           c.globalAlpha = 0.72 + 0.28 * glow;
           c.drawImage(spr.halo, x, y, kw, kh);
           c.globalAlpha = 1;
-        } else if (press > 0.03 || held) {
-          c.globalAlpha = 0.12 + press * 0.26;
+        } else if (ownPress > 0.03 || held) {
+          c.globalAlpha = 0.12 + ownPress * 0.26;
           c.drawImage(spr.halo, x, y, kw, kh);
           c.globalAlpha = 1;
         }
       }
       if (tired) { c.drawImage(spr.tired, x, y, kw, kh); return; }
       if (bot) { c.drawImage(spr.bot, x, y, kw, kh); return; }
-      if (press <= 0.01) { c.drawImage(spr.idle, x, y, kw, kh); return; }
-      if (press >= 0.99) { c.drawImage(spr.down, x, y, kw, kh); return; }
+      if (disp <= 0.01) { c.drawImage(spr.idle, x, y, kw, kh); return; }
+      if (disp >= 0.99) { c.drawImage(spr.down, x, y, kw, kh); return; }
       c.drawImage(spr.down, x, y, kw, kh);
-      c.globalAlpha = 1 - press;
+      c.globalAlpha = 1 - disp;
       c.drawImage(spr.idle, x, y, kw, kh);
       c.globalAlpha = 1;
     }
 
     /** One tapered inner-rim shadow band along edge A->B with inward unit normal (nx, ny). */
-    const RIM_W = 74;
+    const RIM_W = 42;
     function rimBand(c, ax, ay, bx, by, nx, ny, da, db) {
       if (da + db < 0.005) return;
       const ex = bx - ax, ey = by - ay, L = Math.hypot(ex, ey), tx = ex / L, ty = ey / L;
@@ -910,11 +941,10 @@
       const v2 = vx * vx + vy * vy;
       const p0x = ax - nx * (1 - da) * RIM_W, p0y = ay - ny * (1 - da) * RIM_W;
       const g = c.createLinearGradient(p0x, p0y, p0x + vx / v2, p0y + vy / v2);
-      g.addColorStop(0, 'rgba(18,28,52,.38)');
-      g.addColorStop(0.2, 'rgba(18,28,52,.275)');
-      g.addColorStop(0.4, 'rgba(18,28,52,.181)');
-      g.addColorStop(0.6, 'rgba(18,28,52,.101)');
-      g.addColorStop(0.8, 'rgba(18,28,52,.037)');
+      g.addColorStop(0, 'rgba(18,28,52,.2)');
+      g.addColorStop(0.25, 'rgba(18,28,52,.13)');
+      g.addColorStop(0.55, 'rgba(18,28,52,.06)');
+      g.addColorStop(0.8, 'rgba(18,28,52,.02)');
       g.addColorStop(1, 'rgba(18,28,52,0)');
       c.beginPath();
       c.moveTo(ax, ay); c.lineTo(bx, by); c.lineTo(bx + nx * RIM_W, by + ny * RIM_W); c.lineTo(ax + nx * RIM_W, ay + ny * RIM_W);
@@ -930,20 +960,14 @@
       tf(c);
       const now = V.now;
       const tp = V.trayPress || V.press;
-      // the floor darkens toward the pressed (low) side, so the tilt reads even without 3D
+      // the floor shades subtly along the tilt direction (zero when all four corners are equal)
       const tl = P.tilt(tp), m = Math.hypot(tl.tx, tl.ty);
-      if (m > 0.015 || tl.sink > 0.015) {
+      if (m > 0.015) {
         c.save(); floorPath(c); c.clip();
-        if (m > 0.015) {
-          const ux = tl.tx / m, uy = tl.ty / m, a = Math.min(1, m) * 0.12;
-          const g = c.createLinearGradient(-ux * 560, -uy * 560, ux * 560, uy * 560);
-          g.addColorStop(0, `rgba(255,255,255,${(a * 1.3).toFixed(3)})`); g.addColorStop(0.5, 'rgba(255,255,255,0)'); g.addColorStop(1, `rgba(18,28,52,${a.toFixed(3)})`);
-          c.fillStyle = g; c.fillRect(-P.X, -P.Y, 2 * P.X, 2 * P.Y);
-        }
-        if (tl.sink > 0.015) {
-          c.fillStyle = `rgba(18,28,52,${(tl.sink * 0.05).toFixed(3)})`;
-          c.fillRect(-P.X, -P.Y, 2 * P.X, 2 * P.Y);
-        }
+        const ux = tl.tx / m, uy = tl.ty / m, a = Math.min(1, m) * 0.12;
+        const g = c.createLinearGradient(-ux * 560, -uy * 560, ux * 560, uy * 560);
+        g.addColorStop(0, `rgba(255,255,255,${(a * 1.3).toFixed(3)})`); g.addColorStop(0.5, 'rgba(255,255,255,0)'); g.addColorStop(1, `rgba(18,28,52,${a.toFixed(3)})`);
+        c.fillStyle = g; c.fillRect(-P.X, -P.Y, 2 * P.X, 2 * P.Y);
         c.restore();
       }
       // rim shadow cast by the fixed frame onto the sinking tray edges (interpolated per corner depth)
@@ -956,12 +980,12 @@
         rimBand(c, TRAY_X, -TRAY_Y, TRAY_X, TRAY_Y, -1, 0, d[2], d[3]);
         c.restore();
       }
-      for (let i = 0; i < 4; i++) knob(c, i, V.press[i], (V.held >> i) & 1, V.tired[P.OWNER[i]], 0.5 + 0.5 * Math.sin(now * 8), V.tray);
-      // countdown: a pulse on the starting spot
+      for (let i = 0; i < 4; i++) knob(c, i, V.press[i], d[i], (V.held >> i) & 1, V.tired[P.OWNER[i]], 0.5 + 0.5 * Math.sin(now * 8), V.tray);
+      // countdown: a pulse on the start cup
       if (V.ring != null) {
         for (let j = 0; j < 2; j++) {
           const q = (V.ring * 1.4 + j * 0.5) % 1;
-          c.beginPath(); c.arc(0, 0, 22 + q * 60, 0, TAU);
+          c.beginPath(); c.arc(0, 0, P.CUP_R + q * (P.DISC_R - P.CUP_R) * 0.75, 0, TAU);
           c.lineWidth = 3 * (1 - q) + 0.5; c.strokeStyle = `rgba(14,22,40,${(0.35 * (1 - q)).toFixed(3)})`; c.stroke();
         }
       }
@@ -1005,28 +1029,35 @@
         }
         c.restore();
       }
-      // marble
+      // marble (drawn on cvLive unclipped by floorPath so it rides smoothly up onto the cove)
       if (V.ball) {
         const { x, y, scale, dark, vx, vy } = V.ball;
         const r = P.BALL;
-        const [lx, ly] = lean(x, y, r * scale);
+        const cv = !dark && typeof P.cove === 'function' ? P.cove(x, y) : null;
+        const lift = cv ? cv.lift : 0;
+        const climb = cv && cv.run > 0 ? clamp(cv.q / cv.run, 0, 1) : 0;
+        const liftScale = 1 + (lift / r) * 0.14;
+        const visScale = scale * liftScale;
+        const [lx, ly] = lean(x, y, r * scale + lift);
         const sp = Math.hypot(vx || 0, vy || 0);
         if (sp > 240 && scale > 0.9) { // a motion streak behind it
           const ux = vx / sp, uy = vy / sp, len = Math.min(120, sp * 0.1);
           const g = c.createLinearGradient(x + lx, y + ly, x + lx - ux * len, y + ly - uy * len);
           g.addColorStop(0, 'rgba(120,132,150,.32)'); g.addColorStop(1, 'rgba(120,132,150,0)');
           c.beginPath(); c.moveTo(x + lx, y + ly); c.lineTo(x + lx - ux * len, y + ly - uy * len);
-          c.lineCap = 'round'; c.lineWidth = r * 1.7; c.strokeStyle = g; c.stroke();
+          c.lineCap = 'round'; c.lineWidth = r * 1.7 * liftScale; c.strokeStyle = g; c.stroke();
         }
         if (scale > 0.6) {
-          const sw = r * 4 * scale;
-          c.globalAlpha = scale;
-          c.drawImage(ballShadow, x + light.x * 9 - sw / 2, y + light.y * 9 - sw / 2, sw, sw);
+          const sw = r * 4 * scale * (1 - climb * 0.18);
+          const shX = x + light.x * 9 * (1 - climb * 0.5) + (cv ? cv.nx * r * climb * 0.45 : 0);
+          const shY = y + light.y * 9 * (1 - climb * 0.5) + (cv ? cv.ny * r * climb * 0.45 : 0);
+          c.globalAlpha = scale * (1 - climb * 0.35);
+          c.drawImage(ballShadow, shX - sw / 2, shY - sw / 2, sw, sw);
           c.globalAlpha = 1;
         }
-        const bs = (r + 4) * 2 * scale;
+        const bs = (r + 4) * 2 * visScale;
         c.drawImage(ballSprite, x + lx - bs / 2, y + ly - bs / 2, bs, bs);
-        if (dark > 0) { c.beginPath(); c.arc(x + lx, y + ly, r * scale, 0, TAU); c.fillStyle = `rgba(8,10,14,${dark})`; c.fill(); }
+        if (dark > 0) { c.beginPath(); c.arc(x + lx, y + ly, r * visScale, 0, TAU); c.fillStyle = `rgba(8,10,14,${dark})`; c.fill(); }
       }
       // little sparks where the marble hits hard
       for (let i = sparks.length - 1; i >= 0; i--) {
@@ -1041,10 +1072,13 @@
       }
       c.globalAlpha = 1;
     }
-    function spark(x, y, v, col) {
+    function spark(x, y, v, col, inx, iny) {
       const n = Math.min(7, Math.floor(v / 180) + 2);
+      const hasDir = !!(inx || iny);
+      const baseA = hasDir ? Math.atan2(iny, inx) : 0;
       for (let i = 0; i < n; i++) {
-        const a = Math.random() * TAU, sp = 80 + Math.random() * v * 0.3;
+        const a = hasDir ? baseA + (Math.random() - 0.5) * 2.4 : Math.random() * TAU;
+        const sp = 80 + Math.random() * v * 0.3;
         sparks.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, t: 0, life: 0.22 + Math.random() * 0.2, col: col || '#9aa6b8' });
       }
       if (sparks.length > 80) sparks.splice(0, sparks.length - 80);
@@ -1052,8 +1086,9 @@
     return { resize, drawLive, spark, invalidate() { dirty = true; }, get k() { return k; } };
   })();
 
-  /* screen position of a board point (for particle bursts) */
+  /* screen position of a board point (for particle bursts and tips) */
   function toScreen(x, y) {
+    if (B3) return B3.project(x, y, 0);
     const th = L.theta * DEG, a = L.pitch * DEG, S = L.S;
     const persp = parseFloat(els.table.style.perspective) || 1000;
     let u = (x * Math.cos(th) - y * Math.sin(th)) * S, v = (x * Math.sin(th) + y * Math.cos(th)) * S;
@@ -1527,7 +1562,7 @@
     for (const p of P.POCKETS) {
       if (!cols.includes(p.color)) continue;
       // beside the pocket, on the side away from the other pocket at that end
-      const a = toScreen(p.side * 458, p.v * 42), b = toScreen(p.side * 458, p.v * 86); // pocket middle -> its outer wall
+      const a = toScreen(p.hx, p.hy), b = toScreen(p.hx, p.v * (P.OUT + P.WALL + 8)); // pocket middle -> its outer wall
       const face = G.mode === 'local' ? L.faces[p.color] : 0;
       const dl = Math.hypot(b.x - a.x, b.y - a.y) || 1, ux = (b.x - a.x) / dl, uy = (b.y - a.y) / dl;
       const along = Math.abs(ux * Math.cos(face * DEG) + uy * Math.sin(face * DEG)); // 1 = the label lies along that direction
@@ -1555,7 +1590,22 @@
     for (const ev of events) {
       if (ev.k === 'hit') {
         if (G.mode !== 'demo') Snd.play(ev.kind, ev.v);
-        if (ev.v > 360) R.spark(ev.x, ev.y, ev.v, ev.kind === 'wall' ? '#ffffff' : '#9aa6b8');
+        if (ev.v > 360) {
+          let sx = ev.x, sy = ev.y, snx = 0, sny = 0, fire = true;
+          if (ev.kind === 'edge' && typeof P.cove === 'function') {
+            const c = P.cove(ev.x, ev.y);
+            // Smooth cove entry at q ~ 0 is tangent to the floor; only spark on high-cove lip impacts
+            if (c.run > 0 && c.q >= c.run * 0.75) {
+              const st = clamp(c.q / c.run, 0, 1);
+              sx = ev.x + c.nx * P.BALL * st;
+              sy = ev.y + c.ny * P.BALL * st;
+              snx = -c.nx; sny = -c.ny;
+            } else {
+              fire = false;
+            }
+          }
+          if (fire) (B3 || R).spark(sx, sy, ev.v, ev.kind === 'wall' ? '#ffffff' : '#9aa6b8', snx, sny);
+        }
       } else if (ev.k === 'goal') {
         G.glow = { pocket: ev.pocket, t: 0 };
         if (G.mode === 'demo') continue;
@@ -1586,13 +1636,17 @@
      Main loop
      ================================================================ */
   let lastT = performance.now(), acc = 0, frames = [];
+  const rollPts = new Float32Array(84); // per-substep (x, y) pairs for exact rolling across bounces/coves
+  let rollN = 0;
   function frame(now) {
     requestAnimationFrame(frame);
     const dt = Math.min(0.1, (now - lastT) / 1000);
     lastT = now;
     if (TEST) { frames.push(dt); if (frames.length > 600) frames.shift(); }
+    rollN = 0;
     const sim = G.mode === 'demo' || G.mode === 'local' || G.mode === 'cpu' || G.mode === 'host';
     if (sim && !G.paused && !G.hold) {
+      if (G.phase === 'play' && G.s.live) { rollPts[0] = G.s.x; rollPts[1] = G.s.y; rollN = 1; }
       acc += dt;
       let n = 0;
       while (acc >= P.K.DT && n < 40) {
@@ -1601,6 +1655,7 @@
         else if (G.mode === 'cpu') { G.hands[G.me] = P.handsOf(G.me, heldMask); G.hands[OTHER[G.me]] = G.phase === 'play' ? G.bots[OTHER[G.me]].update(G.s, P.K.DT, G.grip.tired[OTHER[G.me]]) : 0; }
         else if (G.mode === 'host') { G.hands.r = P.handsOf('r', heldMask); G.hands.b = Net.guestLv(); }
         stepGame(P.K.DT);
+        if (G.phase === 'play' && G.s.live && rollN < 42) { rollPts[rollN * 2] = G.s.x; rollPts[rollN * 2 + 1] = G.s.y; rollN++; }
         acc -= P.K.DT; n++;
       }
       if (n >= 40) acc = 0;
@@ -1631,31 +1686,13 @@
   }
   const work = [];
   const _rd = [0, 0, 0, 0], lastStemT = ['', '', '', ''], _tr = { crx: 1, srx: 0, cry: 1, sry: 0, tzU: -2.5, z0U: 2.5 };
-  let lastPhase = '', lastTrayT = '', liveDirty = 30, drawn = 0;
+  let lastPhase = '', lastTrayT = '', liveDirty = 30, drawn = 0, lastBallVis = null;
 
   function render(t, dt) {
     if (!L) return;
     // paused: nothing moves, so after the levers have settled there's nothing to redraw
     if (G.paused && screen === 'game') { Snd.roll(0); if (liveDirty <= 0) return; liveDirty--; } else liveDirty = 30;
-    // the tray sinks and tilts down toward pressed corners inside the fixed outer frame
     const press = G.s.press;
-    const d = P.depths(press, _rd);
-    const tl = P.tilt(press);
-    const b = tl.tx * 0.5, c = tl.ty * 0.5;
-    const twist = 0.25 * (d[0] - d[1] - d[2] + d[3]);
-    const a = tl.sink + Math.abs(twist);
-    const ryRad = Math.atan((DROP_V * b) / TRAY_X), rxRad = -Math.atan((DROP_V * c) / TRAY_Y);
-    const ry = ryRad / DEG, rx = rxRad / DEG;
-    const z0 = Math.max(2, 2.5 * L.S);
-    const tz = -(z0 + DROP_V * a * L.S);
-    const tt = `translate3d(0px, 0px, ${tz.toFixed(1)}px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`;
-    if (tt !== lastTrayT) {
-      lastTrayT = tt;
-      els.tray.style.transform = tt;
-      _tr.crx = Math.cos(rxRad); _tr.srx = Math.sin(rxRad);
-      _tr.cry = Math.cos(ryRad); _tr.sry = Math.sin(ryRad);
-      _tr.z0U = z0 / L.S; _tr.tzU = tz / L.S;
-    }
     // marble: rolling, dropping into a hole, or waiting in the middle
     let ball = null, ring = null;
     if (G.drop) {
@@ -1670,17 +1707,40 @@
         if (G.t > 0) ring = G.t;
       }
     }
+    lastBallVis = ball;
     if (G.glow) { G.glow.t += dt; if (G.glow.t > 2.6) G.glow = null; }
     const prePlay = G.phase === 'count' || G.phase === 'ready';
     const heldShown = G.mode === 'guest' ? Net.shownMask() : (G.mode === 'local' || G.mode === 'cpu' || G.mode === 'host' ? (G.phase === 'play' ? G.mask : (prePlay ? heldMask & ownMask() : 0)) : G.mask);
     const tabP = prePlay ? knobPress(heldShown, dt) : press;
     if (!prePlay) for (let i = 0; i < 4; i++) kl[i] = press[i];
-    for (let i = 0; i < 4; i++) {
-      const st = `translate3d(${(tabP[i] * stemTravel).toFixed(1)}px, 0px, 0px)`;
-      if (st !== lastStemT[i]) { lastStemT[i] = st; els.stems[i].style.transform = st; }
+    if (B3) {
+      B3.draw({ now: t, dt, trayPress: press, press: tabP, held: heldShown, tired: G.grip.tired, ball, glow: G.glow, ring, mine: tipKey ? tipColors() : null, rollPts, rollN });
+    } else {
+      // CSS fallback: the tray sinks and tilts down toward pressed corners inside the fixed outer frame
+      const d = P.depths(press, _rd);
+      const tl = P.tilt(press);
+      const b = tl.tx * 0.5, c = tl.ty * 0.5;
+      const twist = 0.25 * (d[0] - d[1] - d[2] + d[3]);
+      const a = tl.sink + Math.abs(twist);
+      const ryRad = Math.atan((DROP_V * b) / TRAY_X), rxRad = -Math.atan((DROP_V * c) / TRAY_Y);
+      const ry = ryRad / DEG, rx = rxRad / DEG;
+      const z0 = Math.max(2, 2.5 * L.S);
+      const tz = -(z0 + DROP_V * a * L.S);
+      const tt = `translate3d(0px, 0px, ${tz.toFixed(1)}px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`;
+      if (tt !== lastTrayT) {
+        lastTrayT = tt;
+        els.tray.style.transform = tt;
+        _tr.crx = Math.cos(rxRad); _tr.srx = Math.sin(rxRad);
+        _tr.cry = Math.cos(ryRad); _tr.sry = Math.sin(ryRad);
+        _tr.z0U = z0 / L.S; _tr.tzU = tz / L.S;
+      }
+      for (let i = 0; i < 4; i++) {
+        const st = `translate3d(${(Math.max(tabP[i], d[i]) * stemTravel).toFixed(1)}px, 0px, 0px)`;
+        if (st !== lastStemT[i]) { lastStemT[i] = st; els.stems[i].style.transform = st; }
+      }
+      drawn++;
+      R.drawLive({ now: t, dt, trayPress: press, press: tabP, held: heldShown, tired: G.grip.tired, ball, glow: G.glow, ring, mine: tipKey ? tipColors() : null, tray: _tr });
     }
-    drawn++;
-    R.drawLive({ now: t, dt, trayPress: press, press: tabP, held: heldShown, tired: G.grip.tired, ball, glow: G.glow, ring, mine: tipKey ? tipColors() : null, tray: _tr });
     // the rolling sound stops whenever the game does: paused, on hold for a connection, or the page hidden
     if (screen === 'game') { paintMeters(); Snd.roll(G.phase === 'play' && !G.paused && !G.hold && !document.hidden ? Math.hypot(G.s.vx, G.s.vy) : 0); } else Snd.roll(0);
   }
@@ -1962,7 +2022,7 @@
       if (loading) return loading;
       loading = new Promise((res, rej) => {
         const s = document.createElement('script');
-        s.src = 'net.js?v=5';
+        s.src = 'net.js?v=6';
         s.onload = () => (window.OGNet ? res(window.OGNet) : rej(new Error('Online play didn’t load.')));
         s.onerror = () => { loading = null; s.remove(); rej(new Error('Can’t reach the game server. Check your internet connection.')); };
         document.head.append(s);
@@ -2526,7 +2586,7 @@
       if (prev && s.p === 1 && prev.p === 1 && s.ts - prev.ts < 120) {
         const dv = Math.hypot(s.vx - prev.vx, s.vy - prev.vy);
         if (dv > 170) {
-          const kind = Math.abs(s.x) > P.X - P.BALL - 6 || Math.abs(s.y) > P.Y - P.BALL - 6 ? 'edge' : Math.abs(s.x) > 400 ? 'wall' : 'peg';
+          const kind = Math.abs(s.x) > P.X - P.BALL - 6 || Math.abs(s.y) > P.Y - P.BALL - 6 ? 'edge' : Math.abs(s.x) > P.MOUTH - P.BALL ? 'wall' : 'peg';
           later(() => Snd.play(kind, dv * 0.75), clamp(-age * 1000, 0, 300));
         }
       }
@@ -2771,6 +2831,28 @@
   /* ================================================================
      Boot
      ================================================================ */
+  if (!NOGL && window.OGBoard3D && els.gl) {
+    try {
+      B3 = window.OGBoard3D.create({
+        canvas: els.gl,
+        P,
+        consts: { EXT_X, FRAME_X, FRAME_Y, TRAY_X, TRAY_Y, FRAME_DEP, RIM_LIP, TAB_REACH },
+        colors: { r: COLOR.r, b: COLOR.b, rl: COLOR_L.r, bl: COLOR_L.b, rd: COLOR_D.r, bd: COLOR_D.b, rdd: COLOR_DD.r, bdd: COLOR_DD.b },
+        font: HLF,
+        onContextLost() {
+          if (!B3) return;
+          const prev = B3;
+          B3 = null;
+          lastL3 = null;
+          app.classList.remove('gl');
+          try { prev.dispose(); } catch (e) {}
+          applyLayout(false);
+        },
+      });
+      if (B3) app.classList.add('gl');
+    } catch (e) { B3 = null; }
+  }
+
   let resizeT = 0;
   function onResize() {
     FX.size();
@@ -2784,11 +2866,41 @@
   FX.size();
   applyLayout(false);
   settleSwitch();
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { R.invalidate(); applyLayout(false); settleSwitch(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (B3) B3.refreshFonts(); else R.invalidate(); applyLayout(false); settleSwitch(); });
   requestAnimationFrame((t) => { lastT = t; frame(t); });
 
   const joinCode = (location.search.match(/[?&]join=([A-Za-z]{4})/) || [])[1];
   if (joinCode) Net.open(joinCode.toUpperCase());
+
+  function fallbackR3D() {
+    const d = P.depths(G.s.press, [0, 0, 0, 0]);
+    const tabCX = FRAME_X + TAB_REACH - P.LEVER_W * 0.44;
+    const corners = P.CORNERS.map(([sx, sy], c) => {
+      const pt = toScreen(sx * P.X, sy * P.Y);
+      return { x: pt.x, y: pt.y, h: -DROP_V * d[c] };
+    });
+    const tabs = P.CORNERS.map(([sx, sy], c) => {
+      const pt = toScreen(sx * tabCX, sy * P.LEVER_Y);
+      return { x: pt.x, y: pt.y, h: -DROP_V * Math.max(kl[c], d[c]) };
+    });
+    const frame = P.CORNERS.map(([sx, sy]) => toScreen(sx * FRAME_X, sy * FRAME_Y));
+    const S = L ? L.S : 1;
+    let ball = null;
+    if (lastBallVis) {
+      const pt = toScreen(lastBallVis.x, lastBallVis.y);
+      const sc = lastBallVis.scale != null ? lastBallVis.scale : 1;
+      const zSurf = P.heightAt(G.s.press, lastBallVis.x, lastBallVis.y) * (DROP_V / P.K.DROP);
+      const lift = !lastBallVis.dark && typeof P.cove === 'function' ? P.cove(lastBallVis.x, lastBallVis.y).lift : 0;
+      ball = { x: pt.x, y: pt.y, r: P.BALL * sc * S, h: zSurf + P.BALL * sc + lift };
+    }
+    const parts = {
+      pegs: P.PEGS.map((p) => ({ x: p.x, y: p.y })),
+      holes: P.POCKETS.map((p) => ({ x: p.hx, y: p.hy })),
+      pocketPts: P.POCKETS.map((p) => p.pts.map(([x, y]) => ({ x, y }))),
+      tabs: P.CORNERS.map(([sx, sy]) => ({ x: sx * tabCX, y: sy * P.LEVER_Y })),
+    };
+    return { webgl: false, drop: DROP_V, corners, tabs, frame, ball, pegR: P.PEG * S, draws: drawn, parts };
+  }
 
   // test hooks (read-only views, plus ball placement when ?test is in the URL)
   window.OG = {
@@ -2798,9 +2910,11 @@
         modals: modalStack.map((x) => x.m.id), epoch, knobs: kl.slice() };
     },
     fps() { const f = frames.slice(-240); if (!f.length) return null; const s = f.slice().sort((a, b) => a - b); return { avg: f.length / f.reduce((a, b) => a + b, 0), p95ms: s[Math.floor(s.length * 0.95)] * 1000, n: f.length }; },
+    r3d() { return B3 ? B3.r3d() : fallbackR3D(); },
+    project(x, y) { return toScreen(x, y); },
   };
   if (TEST) {
-    window.OG.place = (x, y, vx, vy) => { G.s.x = x; G.s.y = y; G.s.vx = vx || 0; G.s.vy = vy || 0; };
+    window.OG.place = (x, y, vx, vy) => { G.s.x = x; G.s.y = y; G.s.vx = vx || 0; G.s.vy = vy || 0; rollN = 0; if (B3 && B3.resetBall) B3.resetBall(); };
     window.OG.skipCount = () => { if (G.phase === 'ready') { G.ready = { r: true, b: true }; G.phase = 'count'; } if (G.phase === 'count') G.t = COUNT_T; };
     window.OG.sound = (k, a) => Snd.check(k, a);
     window.OG.work = () => { const s = work.slice().sort((a, b) => a - b); return s.length ? { avg: work.reduce((a, b) => a + b, 0) / work.length, p95: s[Math.floor(s.length * 0.95)] } : null; };
@@ -2810,6 +2924,6 @@
     window.OG.layout = () => L;
     window.OG.noBot = () => { for (const k of Object.keys(G.bots)) G.bots[k] = { update: () => 0, reset() {} }; }; // a computer player that never touches its levers
     window.OG.rollV = () => Snd.rollV;
-    window.OG.drawn = () => drawn;
+    window.OG.drawn = () => (B3 ? B3.draws() : drawn);
   }
 })();

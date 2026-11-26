@@ -4,7 +4,7 @@
   "description": "Bundles the 3D opening scene and online play for bestlifecards.com",
   "scripts": {
     "build": "esbuild src/hero.js --bundle --format=iife --minify --target=es2020 --legal-comments=none --outfile=../js/hero3d.js && esbuild src/online.js --bundle --format=iife --minify --target=es2020 --legal-comments=none --outfile=../js/online.js && esbuild src/maker.js --bundle --format=iife --minify --target=es2020 --legal-comments=none --outfile=../js/maker.js",
-    "build:onguard": "esbuild src/onguard-net.js --bundle --format=iife --minify --target=es2020 --legal-comments=none --outfile=../onguard/net.js"
+    "build:onguard": "esbuild src/onguard-net.js --bundle --format=iife --minify --target=es2020 --legal-comments=none --outfile=../onguard/net.js && esbuild src/onguard-board3d.js --bundle --format=iife --minify --target=es2020 --legal-comments=none --outfile=../onguard/board3d.js"
   },
   "keywords": [],
   "author": "",

@@ -11,7 +11,7 @@ import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { getDatabase, ref, get, set, update, remove, onValue, onDisconnect } from 'firebase/database';
 
 const CODE_ABC = 'ABCDEFGHJKMNPQRSTUVWXYZ'; // no I, L, O (easy to misread)
-const V = 5; // protocol / mechanics version: old and new clients must never pair
+const V = 6; // protocol / mechanics version: old and new clients must never pair
 let app = null, auth = null, db = null, uid = null, signing = null;
 let room = null, takenRoom = null;
 let skew = 0; // server clock minus this device's clock (ms), so two devices can compare timestamps
