@@ -276,9 +276,11 @@
     if (sceneHooks[prev] && sceneHooks[prev].stop) sceneHooks[prev].stop();
     if (sceneHooks[i] && sceneHooks[i].start) sceneHooks[i].start();
   }
+  // phones and tablets get a simple list of steps (no scenes), so the scenes only run on wide screens
+  const howSimple = matchMedia('(max-width: 900px)');
   const sio = new IntersectionObserver((es) => es.forEach((e) => {
-    if (e.isIntersecting) showScene(+e.target.dataset.scene);
-  }), { rootMargin: matchMedia('(max-width: 900px) and (min-height: 561px)').matches ? '-64% 0px -26% 0px' : '-45% 0px -45% 0px' }); // phone portrait has the scene stuck on top
+    if (e.isIntersecting && !howSimple.matches) showScene(+e.target.dataset.scene);
+  }), { rootMargin: '-45% 0px -45% 0px' });
   steps.forEach((s) => sio.observe(s));
   // only animate while the how-to section is on screen
   let howVisible = false;
@@ -286,8 +288,16 @@
     howVisible = es[0].isIntersecting;
     const h = sceneHooks[curScene];
     if (!h) return;
-    if (howVisible) h.start && h.start(); else h.stop && h.stop();
+    if (howVisible && !howSimple.matches) h.start && h.start(); else h.stop && h.stop();
   }).observe($('#how'));
+  howSimple.addEventListener('change', () => { const h = sceneHooks[curScene]; if (howSimple.matches && h && h.stop) h.stop(); });
+  // "Read the rules card": shows the official wording under each step (phones)
+  const rulesBtn = $('#rulesToggle');
+  if (rulesBtn) rulesBtn.addEventListener('click', () => {
+    const on = $('#how').classList.toggle('rules-on');
+    rulesBtn.setAttribute('aria-expanded', String(on));
+    rulesBtn.textContent = on ? 'Hide the rules card' : 'Read the rules card';
+  });
 
   // scene 0 — anatomy of the deck
   {

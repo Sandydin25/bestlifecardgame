@@ -26,7 +26,7 @@ npm run build
 ```
 
 ## On Guard (`onguard/`)
-Sandy's first invention, a tilting marble game first published by Parker Brothers, rebuilt for the web.
+Sandy's tilting marble game, published by Parker Brothers, rebuilt for the web.
 Same-phone two-player, online play, and practice against the computer.
 - `onguard/game.js`: drawing, input, screens, sound. `onguard/physics.js`: the board simulation and practice bot.
 - `onguard/net.js` is built from `build/src/onguard-net.js` (`cd build && npm run build:onguard`).

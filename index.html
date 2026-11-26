@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Best Life — The New Fun Game About Life by Sandy Kraemer</title>
-  <meta name="description" content="Go for your Best Life! A fun card game about life by Sandy Kraemer: 52 cards, 12 sets, 48 Connecting Points of wit and wisdom. Ask to win!">
+  <title>Best Life — The Fun Card Game About Life for Families and Friends</title>
+  <meta name="description" content="Go for your Best Life! A fun card game for families and friends, ages 7 to 107: 12 sets, 48 Connecting Points of wit and wisdom, and one way to win: just ask. Play a round free, right here.">
   <meta name="theme-color" content="#23246a">
   <meta property="og:title" content="Go for your Best Life">
-  <meta property="og:description" content="The new fun game about life by Sandy Kraemer. 52 cards · 12 sets · Ask to win!">
+  <meta property="og:description" content="The fun card game about life for families and friends. 12 sets · 48 Connecting Points · Ask to win!">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Best Life">
   <meta property="og:url" content="https://bestlifecards.com/">
@@ -31,21 +31,21 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%233b3d92'/%3E%3Ctext x='50' y='72' font-family='Impact,Arial Narrow,sans-serif' font-size='62' text-anchor='middle' fill='%23ffe31a'%3EBL%3C/text%3E%3C/svg%3E">
   <script>try{if(sessionStorage.getItem('bl-from')==='onguard'){document.documentElement.classList.add('from-og');sessionStorage.removeItem('bl-from')}}catch(e){}</script>
   <link rel="stylesheet" href="fonts.css">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=7">
 </head>
 <body>
 
 <div class="bl-cover" aria-hidden="true"><i class="y"></i><i class="n"><b>BEST LIFE</b></i></div>
 <header class="nav" id="nav">
-  <nav class="game-switch" id="gameSwitch" aria-label="Sandy’s games">
+  <nav class="game-switch" id="gameSwitch" aria-label="Games">
     <i class="gs-pill" aria-hidden="true"></i>
     <a class="gs-tab gs-bl nav-logo" href="#top" aria-current="page" aria-label="Best Life — back to top">BEST LIFE</a>
-    <a class="gs-tab gs-og" href="onguard/" aria-label="On Guard: play Sandy’s tilting marble game"><b class="o1">ON</b><b class="o2">GUARD</b></a>
+    <a class="gs-tab gs-og" href="onguard/" aria-label="On Guard: the tilting marble game"><b class="o1">ON</b><b class="o2">GUARD</b></a>
   </nav>
   <nav class="nav-links" aria-label="Sections">
     <a href="#sets">The Sets</a>
     <a href="#wisdom">Wit &amp; Wisdom</a>
-    <a href="#creator">Meet Sandy</a>
+    <a href="#family">Game Night</a>
     <a href="#how">How to Play</a>
     <a href="#play" class="cta"><span class="cta-long">Play a Round</span><span class="cta-short">Play</span></a>
   </nav>
@@ -53,11 +53,11 @@
   <nav class="nav-sheet" id="navSheet" aria-label="All sections" hidden>
     <a href="#sets">The Sets</a>
     <a href="#wisdom">Wit &amp; Wisdom</a>
-    <a href="#creator">Meet Sandy</a>
+    <a href="#family">Game Night</a>
     <a href="#how">How to Play</a>
     <a href="#play">Play a Round</a>
     <a href="#maker" data-maker>Make your own card</a>
-    <a href="onguard/" class="sheet-og"><span class="og-badge mini" aria-hidden="true"><span class="og-on"><b>ON</b></span><span class="og-guard"><b>GUARD</b></span></span> Sandy’s tilting game</a>
+    <a href="onguard/" class="sheet-og"><span class="og-badge mini" aria-hidden="true"><span class="og-on"><b>ON</b></span><span class="og-guard"><b>GUARD</b></span></span> The tilting marble game</a>
   </nav>
 </header>
 
@@ -71,7 +71,7 @@
       <div class="cap cap-intro" data-cap="intro">
         <div class="kicker">A New Fun Game About Life</div>
         <h1 class="display"><span class="go yl">Go for your</span><span class="bl yl">Best Life</span></h1>
-        <p>The card game created by <b>Sandy Kraemer</b>. Twelve sets of life’s best stuff, a little wit &amp; wisdom on every card, and one simple way to win: <b>just ask.</b></p>
+        <p>The card game for families and friends. Twelve sets of life’s best stuff, a little wit &amp; wisdom on every card, and one simple way to win: <b>just ask.</b></p>
         <div class="by"><img class="medal" src="" data-icon="medal" alt=""><div><small>Created by</small><span class="sig">Sandy Kraemer</span></div></div>
       </div>
 
@@ -142,7 +142,7 @@
           <h3 class="display" id="makerTitle">Make your own card</h3>
           <p class="mk-sub">Pick a style, name your set, and write your own Connecting Point.</p>
           <fieldset class="mk-styles"><legend>Style</legend><div class="mk-swatches" id="mkSwatches"></div></fieldset>
-          <label class="mk-field">Set name<input id="mkName" maxlength="12" autocomplete="off" value="GRANDPA"><small><span id="mkNameN">7</span>/12</small></label>
+          <label class="mk-field">Set name<input id="mkName" maxlength="12" autocomplete="off" value="GAME NIGHT"><small><span id="mkNameN">10</span>/12</small></label>
           <label class="mk-field">Connecting Point<textarea id="mkQuote" maxlength="64" rows="3">Every family should play this game.</textarea><small><span id="mkQuoteN">35</span>/64</small></label>
           <div class="mk-btns">
             <button class="btn btn-y" type="button" id="mkSave">Save picture</button>
@@ -176,29 +176,22 @@
     </div>
   </section>
 
-  <!-- ============================ CREATOR ============================ -->
-  <section class="sec creator" id="creator">
-    <div class="cr-wrap">
-      <figure class="cr-card-wrap reveal">
-        <div class="cr-card" aria-hidden="true">
-          <div class="cr-bg"></div>
-          <img class="cr-ico" src="" data-icon="medal" alt="">
-          <div class="cr-band"><span class="two">SANDY &amp; DOROTHY</span></div>
-          <div class="cr-photo"><img src="img/sandy-dorothy.jpg" alt="" width="900" height="727" loading="lazy" decoding="async"></div>
-          <div class="cr-cp"><small>Connecting Point</small><p>“It’s part luck and part skill.”</p></div>
-          <div class="f-sheen"></div>
-        </div>
-        <figcaption>Sandy F. Kraemer, creator of Best Life, dancing with his wife, Dorothy</figcaption>
-      </figure>
-      <div class="cr-text reveal">
-        <div class="kicker">Meet the Creator</div>
-        <h2 class="display">Sandy F. Kraemer</h2>
-        <p class="cr-lead">Lawyer, author, inventor, lifelong game player, and the mind behind Best Life.</p>
-        <p>Sandy Kraemer has spent his life helping people get the most out of theirs. After studying at Stanford and earning his law degree at the University of Colorado, he built a long career as an estate-planning attorney in Colorado Springs, helping thousands of families plan for the future.</p>
-        <p>Along the way he wrote the books on it, including the <i>60 Minute Estate Planner</i>, and later <i>How To Ask</i>, his guide to asking for what you want. It’s no accident that in Best Life, asking is how you win.</p>
-        <p>Sandy has given a great deal back to his community, too. He served on the University of Colorado Board of Regents, including a term as its chairman, and the library at the University of Colorado Colorado Springs carries his family’s name: the Kraemer Family Library.</p>
-        <p>And Sandy has always loved games. He has played pinball at the Penny Arcade in Manitou Springs since he was a kid, he has been inventing games for decades, and the very first one he invented was licensed to Parker Brothers. Best Life is his newest, a game about the things that make a good life: family, friends, goals, humor, and a little wisdom on every card.</p>
-      </div>
+  <!-- ============================ GAME NIGHT ============================ -->
+  <section class="sec family" id="family">
+    <div class="sec-head reveal">
+      <div class="kicker">Game Night</div>
+      <h2 class="display">Made for <em>families</em></h2>
+      <p>Kids, parents, cousins and friends: Best Life is quick to learn, easy to love, and best with the people you care about.</p>
+    </div>
+    <div class="fam-grid">
+      <article class="fam reveal"><img src="" data-icon="hugface" alt=""><h3>Ages 7 to 107</h3><p>Simple enough for kids. Fun for everyone at the table.</p></article>
+      <article class="fam reveal"><img src="" data-icon="grin" alt=""><h3>2 to 6 players</h3><p>Play one-on-one, or bring the whole family.</p></article>
+      <article class="fam reveal"><img src="" data-icon="point" alt=""><h3>Look up and ask</h3><p>Look right at someone and say “Help me with…” Eye contact is part of the game.</p></article>
+      <article class="fam reveal"><img src="" data-icon="books" alt=""><h3>Wit &amp; wisdom</h3><p>48 Connecting Points to read out loud, laugh about, and share.</p></article>
+    </div>
+    <div class="fam-cta reveal">
+      <a class="btn btn-y" href="#play">Play a round now</a>
+      <a class="btn btn-ghost" href="#how">How to play</a>
     </div>
   </section>
 
@@ -209,32 +202,37 @@
       <h2 class="display">Ask to win!</h2>
       <p>2 to 6 players, ages 7 to 107. If you’ve ever played Go Fish, you already know the feeling. Here’s how it goes, straight from the rules card.</p>
     </div>
-    <div class="how-wrap">
+    <div class="how-wrap" id="howWrap">
       <div class="how-steps" id="howSteps">
         <article class="step" data-scene="0">
           <div class="no">1</div>
           <h3>The cards</h3>
+          <p class="step-sum">12 sets of 4 Best Life cards, plus 4 Action cards. Every Best Life card has its own Connecting Point, just for fun.</p>
           <div class="rule"><b>52 cards</b> includes <b>12 sets of 4 BEST LIFE CARDS</b> such as 4 <b>MONEY</b> or 4 <b>FOOD</b> (each card with a different Connecting Point) plus <b>4 ACTION CARDS</b>. Read Connecting Points only for wit and wisdom.</div>
           <p class="plain">12 sets × 4 cards + 4 Action cards = 52.</p>
         </article>
         <article class="step" data-scene="1">
           <div class="no">2</div>
           <h3>Object of the game</h3>
+          <p class="step-sum">Win the most sets. Get all four cards of a set, like 4 MONEY, and it’s yours.</p>
           <div class="rule">Win the most sets of <b>BEST LIFE CARDS</b>, such as 4 <b>MONEY</b> or 4 <b>FOOD CARDS</b>.</div>
           <p class="plain">Get all four of a kind and the set is yours.</p>
         </article>
         <article class="step" data-scene="2">
           <div class="no">3</div>
           <h3>The deal</h3>
+          <p class="step-sum">Deal 7 cards each (5 each with 5 or 6 players). The rest go face down in the middle: that’s the Help Stack.</p>
           <div class="rule">Any player can be dealer. Dealer shuffles all cards. Dealer then deals <b>7 cards</b> face down to each player if 2–4 players, <b>5 cards</b> each for 5–6 players. Remaining deck is put face down to make the <b>Help Stack</b>. Organize cards in hand.</div>
           <p class="plain">Pick a number of players and watch the deal.</p>
         </article>
         <article class="step" data-scene="3">
           <div class="no">4</div>
           <h3>Play</h3>
+          <p class="step-sum">Look right at any player and ask for a set: <span class="say">“Help me with MONEY!”</span></p>
           <div class="rule">Player to dealer’s left <b>looks directly at any player</b> and asks that player for help collecting <b>BEST LIFE CARDS</b> of a specific set by saying <span class="say">“Help me with…”</span>. For example <b>“Help me with MONEY”</b>.</div>
           <p class="plain">Eye contact is part of the game!</p>
         </article>
+        <button class="btn btn-ink rules-toggle" id="rulesToggle" type="button" aria-expanded="false" aria-controls="howSteps">Read the rules card</button>
       </div>
       <div class="how-visual">
         <div class="how-sticky">
@@ -267,7 +265,12 @@
       </div>
       <div class="board" id="board">
         <div class="seat them">
-          <div class="who-tag" id="tagThem"><div class="av"><img src="" data-icon="grin" alt=""></div><div><b>Smiley</b><small id="themInfo">7 cards</small></div></div>
+          <div class="who-tag" id="tagThem">
+            <div class="av"><img src="" data-icon="grin" alt=""></div>
+            <div class="who-txt"><b>Smiley</b><small id="themInfo">7 cards</small></div>
+            <span class="turn-chip">Smiley’s turn</span>
+            <div class="score"><div class="sets-won" id="setsThem"></div><span class="sc-n" id="scoreThem"><b>0</b>sets</span></div>
+          </div>
           <div class="hand theirs" id="handThem"></div>
         </div>
         <div class="mid">
@@ -275,16 +278,16 @@
             <div class="pile" id="pile"></div>
             <div class="pile-lbl"><b id="pileCount">34</b>Help Stack</div>
           </div>
-          <div class="msg" id="msg" aria-live="polite">Pick a set to ask for.</div>
-          <div class="side-col r">
-            <span class="t">Smiley’s sets</span><div class="sets-won" id="setsThem"></div>
-            <span class="t" style="margin-top:10px">Your sets</span><div class="sets-won" id="setsYou"></div>
-          </div>
+          <div class="msg" id="msg" aria-live="polite"></div>
         </div>
         <div class="seat you">
-          <div class="who-tag" id="tagYou"><div class="av"><img src="" data-icon="hugface" alt=""></div><div><b>You</b><small id="youInfo">7 cards</small></div></div>
-          <div class="ask-bar" id="askBar"></div>
-          <div class="hand mine" id="handYou"></div>
+          <div class="who-tag" id="tagYou">
+            <div class="av"><img src="" data-icon="hugface" alt=""></div>
+            <div class="who-txt"><b>You</b><small id="youInfo">7 cards</small></div>
+            <span class="turn-chip">Your turn</span>
+            <div class="score"><div class="sets-won" id="setsYou"></div><span class="sc-n" id="scoreYou"><b>0</b>sets</span></div>
+          </div>
+          <div class="hand mine" id="handYou" role="group" aria-label="Your cards"></div>
         </div>
         <div class="end-screen start-screen on" id="startScreen">
           <div class="menu">
@@ -352,9 +355,9 @@
 <script src="js/art.js"></script>
 <script src="js/stats.js"></script>
 <script src="js/engine.js"></script>
-<script src="js/main.js"></script>
+<script src="js/main.js?v=7"></script>
 <script src="js/sound.js"></script>
-<script src="js/game.js"></script>
+<script src="js/game.js?v=7"></script>
 <script>
   // the 3D box (big): load it right away, except for invite links, which go straight to the game
   (function () {

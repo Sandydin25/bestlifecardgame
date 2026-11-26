@@ -53,8 +53,8 @@ const els = {
   hand: $('#oHand'), lobby: $('#oLobby'), end: $('#oEnd'),
 };
 for (let i = 0; i < 3; i++) els.pile.append(BL.card('money', { cls: 'down', label: false }));
-els.hand.setAttribute('aria-hidden', 'true');
-BL.peekable && BL.peekable(els.hand);
+els.hand.setAttribute('role', 'group');
+els.hand.setAttribute('aria-label', 'Your cards');
 // card ids are set + 0..3: the same four Connecting Points as the printed deck
 const quoteOf = (card) => { const id = E.setOf(card), q = BL.set(id).quotes; return q[(parseInt(card.slice(id.length), 10) || 0) % q.length]; };
 
@@ -102,7 +102,7 @@ const saveName = (n) => { try { localStorage.setItem('bl-name', n); } catch (e) 
 function openCreate() {
   show();
   lobby(`<h3>Start a game</h3><p>You’ll get a join code to send to family. 2 to 6 players, each on their own phone.</p>
-    <form id="oCreateForm" class="o-form"><label>Your name<input id="oName" maxlength="16" autocomplete="nickname" value="${esc(savedName())}" required placeholder="e.g. Grandpa"></label>
+    <form id="oCreateForm" class="o-form"><label>Your name<input id="oName" maxlength="16" autocomplete="nickname" value="${esc(savedName())}" required placeholder="e.g. Sam"></label>
     <button class="btn btn-y" type="submit">Create game</button></form>
     <button class="o-link" type="button" data-act="back">Back</button>`);
   $('#oCreateForm').addEventListener('submit', async (e) => {
@@ -494,50 +494,33 @@ function handCounts() {
 }
 
 function renderAsk() {
-  els.ask.innerHTML = '';
-  if (!R.state || status() !== 'playing') return;
-  const groups = handCounts();
-  if (!myTurn()) {
-    // not my turn: a plain summary of my hand, easy to read without fanning the cards
-    if (R.sending) { els.ask.innerHTML = '<span class="prompt">Asking…</span>'; return; }
-    if (groups.length) els.ask.innerHTML = `<span class="hand-sum">Your cards: ${groups.map(([id, n]) => `<b>${NAME(id)}</b>${n > 1 ? ` ×${n}` : ''}`).join(' · ')}</span>`;
-    return;
-  }
-  syncTarget();
-  const lead = document.createElement('span');
-  lead.className = 'prompt';
-  lead.innerHTML = R.target ? `Ask ${pname(R.target)}: “Help me with…”`
-    : R.pendingSet ? `Now tap who to ask for ${NAME(R.pendingSet)}` : 'First tap who to ask';
-  els.ask.append(lead);
-  groups.forEach(([id, n]) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = R.pendingSet === id ? 'on' : '';
-    b.innerHTML = `<img src="${BL.iconURI(BL.set(id).icon)}" alt="">${NAME(id)}<span style="opacity:.55">×${n}</span>`;
-    b.setAttribute('aria-label', R.target ? `Ask ${rawName(R.target)} for ${NAME(id)}` : `Choose ${NAME(id)}, then tap who to ask`);
-    b.addEventListener('click', () => pickSet(id));
-    b.addEventListener('pointerenter', () => els.hand.querySelectorAll('.gcard').forEach((e) => e.classList.toggle('hl', E.setOf(e.dataset.card) === id)));
-    b.addEventListener('pointerleave', renderHandHints);
-    els.ask.append(b);
-  });
+  // the hand itself is the way to ask now (tap a card); this line only says when an ask is on its way
+  els.ask.innerHTML = R && R.sending && R.state && status() === 'playing' ? '<span class="prompt">Asking…</span>' : '';
 }
 
-/* tapping a card in my hand (or a set button) asks for that set, or remembers it until I tap a person */
-function pickSet(id) {
-  if (!myTurn()) return;
-  if (R.target) { sendAsk(R.target, id); return; }
-  R.pendingSet = R.pendingSet === id ? null : id;
-  renderAsk();
-  renderHandHints();
+/* tapping a card in my hand brings it up big; on my turn it has a "Help me with…" button
+   (or one button per person, when there's more than one I could ask) */
+function openCard(c, kbd) {
+  if (!R || !c || !c.dataset.card) return;
+  const set = E.setOf(c.dataset.card), can = myTurn();
+  if (can) syncTarget();
+  const t = can ? (R.target ? [R.target] : targets()) : [];
+  const ask = (pid) => () => { if (myTurn()) sendAsk(pid, set); };
+  BL.cardPop({
+    set, quote: quoteOf(c.dataset.card), fromEl: c, kbd,
+    buttons: t.length === 1 ? [{ text: `Help me with ${NAME(set)}!`, act: ask(t[0]) }] : t.map((pid) => ({ text: `Ask ${pname(pid)}`, act: ask(pid) })),
+    note: !can ? (R.state && status() === 'playing' ? 'Wait for your turn to ask.' : '') : t.length > 1 ? `Who do you want to ask for ${NAME(set)}?` : `Ask ${pname(t[0])}:`,
+    closeText: can ? 'Not now' : 'Close',
+  });
 }
-els.hand.addEventListener('click', (e) => {
+els.hand.addEventListener('click', (e) => openCard(e.target.closest('.gcard'), e.detail === 0));
+els.hand.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
   const c = e.target.closest('.gcard');
-  if (c && c.dataset.card && R) pickSet(E.setOf(c.dataset.card));
+  if (c) { e.preventDefault(); openCard(c, true); }
 });
 function renderHandHints() {
-  const on = myTurn();
-  els.hand.classList.toggle('locked', !on);
-  els.hand.querySelectorAll('.gcard').forEach((e) => e.classList.toggle('hl', on && !!R.pendingSet && E.setOf(e.dataset.card) === R.pendingSet));
+  els.hand.classList.toggle('locked', !myTurn());
 }
 
 /* my hand, with cards sliding in from whoever gave them (or the Help Stack) */
@@ -556,7 +539,10 @@ function renderHand() {
   let prev = null;
   const nodes = R.hand.map((c) => {
     let e = els.hand.querySelector(`[data-card="${c}"]`);
-    if (!e) { e = BL.card(E.setOf(c), { cls: 'gcard', label: false, quote: quoteOf(c) }); e.dataset.card = c; }
+    if (!e) {
+      e = BL.card(E.setOf(c), { cls: 'gcard', label: false, quote: quoteOf(c) }); e.dataset.card = c;
+      e.tabIndex = 0; e.setAttribute('role', 'button'); e.setAttribute('aria-label', `${NAME(E.setOf(c))} card`);
+    }
     e.classList.toggle('gstart', prev !== null && prev !== E.setOf(c));
     prev = E.setOf(c);
     return e;
@@ -702,8 +688,7 @@ function turnText(st) {
   if (st.turn === uid) {
     if (R.sending) return 'Asking…';
     const t = targets();
-    return t.length === 1 ? `<b>Your turn!</b> Tap a card to ask ${pname(t[0])} for that set.` : R.target
-      ? `<b>Your turn!</b> Now tap a card to ask ${pname(R.target)} for it.` : '<b>Your turn!</b> Tap the person you want to ask, then one of your cards.';
+    return '<b>Your turn!</b> Tap a card.';
   }
   const away = !isOnline(st.turn);
   const again = R.isHost && R.full && R.full.skipped && R.full.skipped[st.turn];

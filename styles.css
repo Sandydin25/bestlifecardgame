@@ -1036,3 +1036,110 @@ html.from-og .bl-cover { display: block; position: fixed; inset: 0; z-index: 100
 .bl-cover .n { background: var(--indigo); animation: bl-out .6s .22s cubic-bezier(.75,0,.2,1) forwards; }
 .bl-cover .n b { font: 400 clamp(60px, 15vw, 170px)/1 var(--display); color: var(--yellow); letter-spacing: .01em; transform: skewX(-9deg); }
 @keyframes bl-out { to { transform: translateX(-115%); } }
+
+/* ================================================================== */
+/*  GAME NIGHT (families)                                             */
+/* ================================================================== */
+.family { background: var(--cream); color: var(--ink); }
+.family .kicker { color: #c8202e; }
+.family h2 { color: var(--indigo); }
+.family h2 em { font-style: normal; color: #c8202e; }
+.family .sec-head p { color: #4a4970; }
+.fam-grid { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(14px, 2vw, 24px); }
+.fam { background: #fff; border: 2px solid var(--ink); border-radius: 20px; padding: 22px 20px 20px; box-shadow: 6px 6px 0 var(--ink); text-align: left; }
+.fam img { width: 52px; height: 52px; display: block; margin-bottom: 14px; }
+.fam h3 { margin: 0 0 8px; font: 400 clamp(26px, 2.4vw, 32px)/1 var(--display); text-transform: uppercase; color: var(--indigo); letter-spacing: .01em; }
+.fam p { margin: 0; font: 600 16px/1.45 var(--body); color: #3d3c63; }
+.fam-cta { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: clamp(30px, 4vw, 48px); }
+.family .btn-ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); }
+@media (max-width: 900px) { .fam-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) {
+  .fam-grid { gap: 12px; }
+  .fam { padding: 16px 14px 15px; border-radius: 16px; box-shadow: 4px 4px 0 var(--ink); }
+  .fam img { width: 40px; height: 40px; margin-bottom: 10px; }
+  .fam h3 { font-size: 22px; }
+  .fam p { font-size: 14px; }
+}
+
+/* ================================================================== */
+/*  HOW TO PLAY on phones and tablets: a simple list, no scenes        */
+/* ================================================================== */
+.step .step-sum, .rules-toggle { display: none; }
+@media (max-width: 900px) {
+  .how-wrap { grid-template-columns: minmax(0, 1fr); max-width: 620px; }
+  .how-visual { display: none; }
+  .how-steps { padding: 0; display: flex; flex-direction: column; gap: 16px; }
+  .step {
+    min-height: 0; opacity: 1; padding: 18px 18px 18px; justify-content: flex-start;
+    background: #fff8c6; border: 2px solid var(--ink); border-radius: 18px; box-shadow: 5px 5px 0 var(--ink);
+    display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 14px; align-items: center;
+  }
+  .step .no { margin: 0; width: 40px; height: 40px; font-size: 19px; }
+  .step h3 { margin: 0; font-size: 30px; }
+  .step .step-sum { display: block; position: static; grid-column: 1 / -1; margin: 12px 0 0; font: 600 17px/1.45 var(--body); color: var(--ink); }
+  .step .plain { display: none; }
+  .step .rule { display: none; grid-column: 1 / -1; margin: 22px 0 2px; box-shadow: none; background: #fff; font-size: 15.5px; }
+  .how.rules-on .step .rule { display: block; }
+  .rules-toggle { display: inline-flex; align-self: center; margin-top: 6px; }
+}
+
+/* ================================================================== */
+/*  THE GAME: sets next to each player, whose turn it is, tap a card  */
+/* ================================================================== */
+#board .seat { flex-direction: column; align-items: stretch; gap: 10px; min-height: 0; }
+#board .seat.you { flex-direction: column-reverse; }
+#board .seat.them .who-tag { align-self: stretch; }
+#board .who-tag { position: relative; gap: 10px; padding: 6px 8px 6px 6px; border-radius: 999px; background: rgba(0,0,0,.16); transition: background .3s, box-shadow .3s; min-width: 0; }
+#board .who-tag.turn { background: rgba(255,227,26,.16); box-shadow: inset 0 0 0 2px rgba(255,227,26,.75); }
+#board .who-tag .av { width: 44px; height: 44px; flex: none; }
+#board .who-tag .av img { width: 36px; height: 36px; }
+.who-txt { min-width: 0; }
+.turn-chip { display: none; flex: none; padding: 6px 10px 5px; border-radius: 999px; background: var(--yellow); color: var(--ink); font: 800 11px/1 var(--body); letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
+.who-tag.turn .turn-chip { display: inline-block; animation: pop .4s cubic-bezier(.3,1.6,.5,1); }
+.score { margin-left: auto; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.score .sets-won { flex-wrap: nowrap; gap: 0; max-width: none; justify-content: flex-end; min-width: 0; }
+.score .won { width: 26px; height: 36px; border-radius: 4px; flex: none; }
+.score .won + .won { margin-left: -9px; }
+.score .won img { width: 19px; height: 19px; }
+.sc-n { flex: none; display: inline-flex; align-items: baseline; gap: 5px; padding: 7px 12px 6px; border-radius: 999px; background: rgba(0,0,0,.3); font: 800 11px/1 var(--body); letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.85); }
+.sc-n b { font: 400 24px/.8 var(--display); letter-spacing: 0; color: var(--yellow); }
+#board .mid { grid-template-columns: auto minmax(0, 1fr); }
+#board .msg { position: relative; justify-self: stretch; max-width: 520px; }
+.m-who { display: table; margin: 0 auto 8px; padding: 4px 9px 3px; border-radius: 999px; font: 800 11px/1 var(--body); letter-spacing: .12em; text-transform: uppercase; background: var(--yellow); color: var(--ink); }
+#board .msg[data-who="them"] { background: rgba(20, 21, 66, .55); }
+#board .msg[data-who="them"] .m-who { background: #fff; }
+.m-set { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px 2px 4px; margin: 0 1px; border-radius: 8px; background: var(--sb, #fff); color: #fff; font: 800 .9em/1.2 var(--body); vertical-align: baseline; box-shadow: 0 2px 0 rgba(0,0,0,.3); text-shadow: 0 1px 0 rgba(0,0,0,.35); white-space: nowrap; }
+.m-set img { width: 1.25em; height: 1.25em; }
+.hand.mine .gcard:focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; border-radius: 6px; }
+.hand.mine .gcard.give { transform: translateY(-18px); }
+.hand.mine .gcard.give .face { box-shadow: 0 0 0 3px var(--yellow), 0 10px 18px rgba(0,0,0,.35); }
+/* tap a card: it comes up big */
+.ask-pop { position: fixed; inset: 0; z-index: 380; display: grid; place-items: center; padding: 20px; animation: fade-in .18s ease-out; }
+.ask-pop.out { opacity: 0; transition: opacity .18s; pointer-events: none; }
+.ap-back { position: absolute; inset: 0; background: rgba(12, 12, 40, .72); }
+.ap-box { position: relative; display: flex; flex-direction: column; align-items: center; gap: 14px; max-width: 100%; }
+.ap-card .card, .ap-card .card .card-inner { transform-style: flat; }
+.ap-card .card .card-inner { transform: none; transition: none; }
+.ap-card .card .face { transition: none; -webkit-backface-visibility: visible; backface-visibility: visible; box-shadow: 0 0 0 1px rgba(0,0,0,.2), 0 26px 50px rgba(0,0,0,.5); }
+.ap-card .card .face.back { display: none; }
+.ap-ask { font-size: 19px; padding: 16px 26px; max-width: calc(100vw - 40px); }
+.ap-wait { margin: 0; color: #fff; font: 700 16px/1.4 var(--body); text-align: center; }
+.ap-x { border: 0; background: none; color: rgba(255,255,255,.85); font: 800 14px/1 var(--body); letter-spacing: .08em; text-transform: uppercase; padding: 10px 14px; cursor: pointer; }
+.ap-x:hover { color: #fff; }
+@keyframes fade-in { from { opacity: 0; } }
+@media (max-width: 700px) {
+  #board .seat.them { gap: 8px; }
+  #board .who-tag b { font-size: 19px; }
+  .turn-chip { font-size: 10px; padding: 5px 8px 4px; }
+  .sc-n { padding: 6px 9px 5px; font-size: 10px; }
+  .sc-n b { font-size: 21px; }
+  #board .mid { gap: 10px; }
+  #board .msg { font-size: 16px; }
+}
+@media (max-width: 380px) {
+  #board .who-tag .av { width: 38px; height: 38px; }
+  #board .who-tag .av img { width: 30px; height: 30px; }
+  #board .who-tag small { display: none; }
+}
+.ap-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; max-width: min(440px, calc(100vw - 40px)); }
+.ap-btns:empty { display: none; }

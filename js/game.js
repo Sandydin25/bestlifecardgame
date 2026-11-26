@@ -12,7 +12,8 @@
   const board = $('#board');
   const handYou = $('#handYou'), handThem = $('#handThem');
   const pileEl = $('#pile'), pileWrap = $('#pileWrap'), pileCount = $('#pileCount');
-  const msg = $('#msg'), askBar = $('#askBar');
+  const msg = $('#msg');
+  const scoreYou = $('#scoreYou'), scoreThem = $('#scoreThem');
   const setsYou = $('#setsYou'), setsThem = $('#setsThem');
   const tagYou = $('#tagYou'), tagThem = $('#tagThem');
   const youInfo = $('#youInfo'), themInfo = $('#themInfo');
@@ -21,7 +22,6 @@
   for (let i = 0; i < 3; i++) pileEl.append(BL.card('money', { cls: 'down', label: false }));
   pileEl.setAttribute('aria-hidden', 'true');
   handThem.setAttribute('aria-hidden', 'true');
-  handYou.setAttribute('aria-hidden', 'true');
   board.tabIndex = -1;
 
   let G = null, gameId = 0, starting = false, kbd = false;
@@ -50,7 +50,8 @@
     if (!c.el) {
       c.el = BL.card(c.set, { cls: 'gcard', label: false, quote: quoteOf(c) });
       const mine = () => c.el.parentElement === handYou;
-      c.el.addEventListener('click', (e) => { if (mine()) { kbd = false; humanAsk(c.set); } });
+      c.el.addEventListener('click', (e) => { if (mine()) { kbd = e.detail === 0; openAsk(c); } });
+      c.el.addEventListener('keydown', (e) => { if (mine() && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); kbd = true; openAsk(c); } });
       c.el.addEventListener('pointerenter', () => { if (mine()) highlight(c.set, true); });
       c.el.addEventListener('pointerleave', () => { if (mine()) highlight(c.set, false); });
     }
@@ -65,7 +66,7 @@
   function sizeCards() {
     const bw = board.clientWidth;
     // bigger cards when the board is full screen on a phone (lots of vertical room)
-    const gw = Math.round(Math.max(50, Math.min(98, bw / (BL.fs && BL.fs.on && bw < 700 ? 6.2 : 10.5))));
+    const gw = Math.round(Math.max(50, Math.min(98, bw / (BL.fs && BL.fs.on && bw < 700 ? 4.4 : 10.5))));
     board.style.setProperty('--gw', gw + 'px');
     // your hand: shrink cards if even maximum overlap would not fit
     const n = G ? G.hands[0].length : 7, groups = G ? groupsOf(0) : 1;
@@ -102,52 +103,34 @@
       const e = elFor(c);
       e.style.rotate = ''; // (a card Smiley handed over was part of his fan)
       e.classList.toggle('gstart', prev !== null && prev !== c.set);
+      e.classList.remove('give');
       prev = c.set;
+      e.tabIndex = 0;
+      e.setAttribute('role', 'button');
+      e.setAttribute('aria-label', `${NAME(c.set)} card`);
       handYou.append(e);
     }
     for (const c of G.hands[1]) {
       const e = elFor(c);
       e.classList.add('down');
-      e.classList.remove('gstart', 'hl');
+      e.classList.remove('gstart', 'hl', 'give');
+      e.removeAttribute('tabindex'); e.removeAttribute('role'); e.removeAttribute('aria-label');
       handThem.append(e);
     }
     // anything no longer in a hand gets removed
     const live = new Set(G.hands[0].concat(G.hands[1]).map((c) => c.el));
     board.querySelectorAll('.hand .gcard').forEach((e) => { if (!live.has(e)) e.remove(); });
     sizeCards();
-    youInfo.textContent = `${G.hands[0].length} card${G.hands[0].length === 1 ? '' : 's'} · ${G.won[0].length} set${G.won[0].length === 1 ? '' : 's'}`;
-    themInfo.textContent = `${G.hands[1].length} card${G.hands[1].length === 1 ? '' : 's'} · ${G.won[1].length} set${G.won[1].length === 1 ? '' : 's'}`;
+    const cards = (n) => `${n} card${n === 1 ? '' : 's'}`, sets = (n) => `<b>${n}</b>set${n === 1 ? '' : 's'}`;
+    youInfo.textContent = cards(G.hands[0].length);
+    themInfo.textContent = cards(G.hands[1].length);
+    scoreYou.innerHTML = sets(G.won[0].length);
+    scoreThem.innerHTML = sets(G.won[1].length);
     pileCount.textContent = G.deck.length;
     pileWrap.classList.toggle('empty', G.deck.length === 0);
     tagYou.classList.toggle('turn', G.turn === 0);
     tagThem.classList.toggle('turn', G.turn === 1);
-    renderAskBar();
-  }
-
-  function renderAskBar() {
-    askBar.innerHTML = '';
-    const counts = {};
-    G.hands[0].forEach((c) => (counts[c.set] = (counts[c.set] || 0) + 1));
-    const ids = Object.keys(counts).sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b));
     handYou.classList.toggle('locked', G.turn !== 0 || G.busy);
-    if (G.turn !== 0 || G.busy || !G.hands[0].length) {
-      // not your turn: an easy-to-read summary of your hand
-      if (ids.length && !G.done) askBar.innerHTML = `<span class="hand-sum">Your cards: ${ids.map((id) => `<b>${NAME(id)}</b>${counts[id] > 1 ? ` ×${counts[id]}` : ''}`).join(' · ')}<small class="peek-tip">${BL.touch ? 'Press and hold a card to read it' : 'Point at a card to read it'}</small></span>`;
-      return;
-    }
-    askBar.append(Object.assign(document.createElement('span'), { className: 'prompt', textContent: 'Help me with…' }));
-    ids.forEach((id) => {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.innerHTML = `<img src="${BL.iconURI(BL.set(id).icon)}" alt="">${NAME(id)}<span style="opacity:.55">×${counts[id]}</span>`;
-      b.addEventListener('click', (e) => { kbd = e.detail === 0; humanAsk(id); });
-      b.addEventListener('pointerenter', () => highlight(id, true));
-      b.addEventListener('pointerleave', () => highlight(id, false));
-      askBar.append(b);
-    });
-    if (kbd && (document.activeElement === document.body || document.activeElement === board || board.contains(document.activeElement))) {
-      askBar.querySelector('button')?.focus({ preventScroll: true });
-    }
   }
 
   /** FLIP every card in the hands across a state change. New cards fly from the Help Stack. */
@@ -197,8 +180,11 @@
     if (G !== g) throw ABORT;
   }
 
-  function say(html) {
-    msg.innerHTML = `<div>${html}</div>`;
+  /** the message box. `who` labels whose move it is: 'you' or 'them' (Smiley) */
+  function say(html, who) {
+    msg.dataset.who = who || '';
+    const tag = who === 'you' ? '<span class="m-who">Your turn</span>' : who === 'them' ? '<span class="m-who">Smiley’s turn</span>' : '';
+    msg.innerHTML = `<div>${tag}${html}</div>`;
     msg.animate([{ transform: 'scale(.96)', opacity: 0.4 }, { transform: 'none', opacity: 1 }], { duration: 260, easing: 'ease-out' });
   }
 
@@ -213,7 +199,7 @@
       if (p === 1) cards.forEach((c) => c.el.classList.remove('down'));
       // celebrate with one of the set's Connecting Points
       const cp = BL.set(id).quotes[(G.won[0].length + G.won[1].length) % 4];
-      say(`<b>SET!</b> ${p === 0 ? 'You' : 'Smiley'} collected all four <em>${NAME(id)}</em> cards.<span class="cp">“${cp}”</span>`);
+      say(`<b>SET!</b> ${p === 0 ? 'You' : 'Smiley'} collected all four ${chip(id)} cards.<span class="cp">“${cp}”</span>`, p === 0 ? 'you' : 'them');
       sound('set');
       {
         await T(p === 1 ? 500 : 150);
@@ -237,7 +223,7 @@
       G.memory.delete(id);
       render();
       if (p === 0) confetti(s, 50);
-      await T(1600); // time to read the Connecting Point
+      await T(2000); // time to read the Connecting Point
     }
   }
   const over = () => G.won[0].length + G.won[1].length === 12;
@@ -246,7 +232,7 @@
     if (!G.deck.length) return null;
     const c = G.deck.pop();
     if (p === 0) {
-      const big = await reveal(c.set, quoteOf(c), pileEl.getBoundingClientRect(), D(1600), note && (() => say(note(c))));
+      const big = await reveal(c.set, quoteOf(c), pileEl.getBoundingClientRect(), D(1600), note && (() => say(note(c), 'you')));
       await flip(() => G.hands[p].push(c), { from: big.getBoundingClientRect(), grow: true, onStart: () => big.remove() });
     } else await flip(() => G.hands[p].push(c), { stagger });
     return c;
@@ -287,6 +273,77 @@
   BL.reveal = (setId, quote, from, hold) => reveal(setId, quote, from, hold);
 
   /* ---------- turns ---------- */
+  // a small chip with the set's icon and name, for the message box
+  const chip = (id) => { const st = BL.set(id); return `<span class="m-set" style="--sb:${st.bg}"><img src="${BL.iconURI(st.icon)}" alt="">${st.name}</span>`; };
+
+  /* Tap a card in your hand: it comes up big (with its Connecting Point) and, on your turn,
+     a "Help me with…" button asks Smiley for that set. */
+  let pop = null, popKbd = false;
+  function closeAsk(back) {
+    if (!pop) return;
+    const p = pop; pop = null;
+    p.classList.add('out');
+    setTimeout(() => p.remove(), 200);
+    if (back && popKbd && back.isConnected) back.focus({ preventScroll: true });
+  }
+  /** A card comes up big out of `fromEl`, with buttons under it (also used by online play).
+      buttons: [{ text, act }]; note: a line of text above the buttons. */
+  function cardPop({ set, quote, fromEl, buttons = [], note = '', closeText = 'Close', kbd: k = false }) {
+    if (pop) { pop.remove(); pop = null; }
+    popKbd = k;
+    const root = document.fullscreenElement || document.body;
+    pop = document.createElement('div');
+    pop.className = 'ask-pop';
+    pop.setAttribute('role', 'dialog');
+    pop.setAttribute('aria-modal', 'true');
+    pop.setAttribute('aria-label', `${NAME(set)} card`);
+    pop.innerHTML = `<div class="ap-back"></div><div class="ap-box"><div class="ap-card"></div>${note ? `<p class="ap-wait">${note}</p>` : ''}<div class="ap-btns"></div><button class="ap-x" type="button">${closeText}</button></div>`;
+    const W = Math.round(Math.min(230, innerWidth * 0.56, innerHeight * 0.36));
+    const big = BL.card(set, { cls: 'ap-c', label: false, quote });
+    big.style.setProperty('--cw', W + 'px');
+    pop.querySelector('.ap-card').append(big);
+    const row = pop.querySelector('.ap-btns');
+    buttons.forEach((b) => {
+      const el = document.createElement('button');
+      el.type = 'button';
+      el.className = 'btn btn-y ap-ask';
+      el.innerHTML = b.text;
+      el.addEventListener('click', () => { closeAsk(); b.act(); });
+      row.append(el);
+    });
+    root.append(pop);
+    // the card rises out of your hand
+    const r0 = fromEl ? fromEl.getBoundingClientRect() : null, r1 = big.getBoundingClientRect();
+    if (!reduce && r0 && r0.width) {
+      big.style.transformOrigin = '0 0';
+      big.animate([{ transform: `translate(${r0.left - r1.left}px, ${r0.top - r1.top}px) scale(${r0.width / r1.width})` }, { transform: 'none' }],
+        { duration: 300, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    }
+    sound('flick');
+    pop.querySelector('.ap-x').addEventListener('click', () => closeAsk(fromEl));
+    pop.querySelector('.ap-back').addEventListener('click', () => closeAsk(fromEl));
+    pop.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); closeAsk(fromEl); }
+      if (e.key === 'Tab') { // keep focus inside the pop-up
+        const f = [...pop.querySelectorAll('button')], i = f.indexOf(document.activeElement);
+        e.preventDefault(); f[(i + (e.shiftKey ? f.length - 1 : 1)) % f.length].focus();
+      }
+    });
+    (pop.querySelector('.ap-ask') || pop.querySelector('.ap-x')).focus({ preventScroll: true });
+  }
+  BL.cardPop = cardPop;
+  BL.closeCardPop = () => closeAsk();
+  function openAsk(card) {
+    if (!G || G.done) return;
+    const canAsk = G.turn === 0 && !G.busy;
+    cardPop({
+      set: card.set, quote: quoteOf(card), fromEl: card.el, kbd,
+      buttons: canAsk ? [{ text: `Help me with ${NAME(card.set)}!`, act: () => humanAsk(card.set) }] : [],
+      note: canAsk ? '' : G.turn === 1 ? 'It’s Smiley’s turn. You can ask on your turn.' : 'Hang on…',
+      closeText: canAsk ? 'Not now' : 'Close',
+    });
+  }
+
   async function humanAsk(set) {
     if (!G || G.busy || G.turn !== 0) return;
     if (!G.hands[0].some((c) => c.set === set)) return;
@@ -295,24 +352,26 @@
     if (kbd) board.focus({ preventScroll: true });
     render();
     G.memory.add(set);
-    say(`You: <span class="say">“Help me with <em>${NAME(set)}</em>!”</span>`);
-    await T(1000);
+    say(`You ask Smiley: <br><span class="say">“Help me with ${chip(set)}!”</span>`, 'you');
+    await T(1300);
     const got = G.hands[1].filter((c) => c.set === set);
     if (got.length) {
-      say(`Smiley: “Here you go!” <br>You got <b>${got.length}</b> <em>${NAME(set)}</em> card${got.length > 1 ? 's' : ''}. Ask again!`);
+      say(`Smiley: “Here you go!” <br>You get <b>${got.length}</b> ${chip(set)} card${got.length > 1 ? 's' : ''}.`, 'you');
+      await T(500);
       await flip(() => { G.hands[1] = G.hands[1].filter((c) => c.set !== set); G.hands[0].push(...got); });
+      await T(500);
       await checkSets(0);
       if (over()) return finish();
       return yourTurn(true);
     }
     if (!G.deck.length) {
-      say(`Smiley: “Sorry, no <em>${NAME(set)}</em>.” <br>The Help Stack is empty, so it’s Smiley’s turn.`);
-      await T(1300);
+      say(`Smiley: “Sorry, no ${NAME(set)}.” <br>The Help Stack is empty, so it’s Smiley’s turn.`, 'you');
+      await T(1600);
     } else {
-      say(`Smiley: “Sorry, no <em>${NAME(set)}</em>.” <br>Off to the Help Stack!`);
-      await T(1100);
+      say(`Smiley: “Sorry, no ${NAME(set)}.” <br>Draw from the Help Stack!`, 'you');
+      await T(1400);
     }
-    const c = await drawFor(0, { note: (d) => (d.set === set ? `You drew ${AN(set)} <em>${NAME(set)}</em>, just what you asked for! Go again.` : `You drew ${AN(d.set)} <em>${NAME(d.set)}</em>.`) });
+    const c = await drawFor(0, { note: (d) => (d.set === set ? `You drew ${AN(set)} ${chip(set)}, just what you asked for! <b>Go again.</b>` : `You drew ${AN(d.set)} ${chip(d.set)}.`) });
     if (c) {
       await T(350);
       await checkSets(0);
@@ -328,9 +387,9 @@
     G.turn = 0;
     if (!G.hands[0].length) {
       if (G.deck.length) {
-        say('You’re out of cards, so you draw from the Help Stack.');
-        await T(700);
-        await drawFor(0, { note: (d) => `You drew ${AN(d.set)} <em>${NAME(d.set)}</em>.` });
+        say('You’re out of cards, so you draw from the Help Stack.', 'you');
+        await T(900);
+        await drawFor(0, { note: (d) => `You drew ${AN(d.set)} ${chip(d.set)}.` });
         await checkSets(0);
         if (over()) return finish();
       } else {
@@ -339,8 +398,10 @@
       }
     }
     G.busy = false;
-    if (!again) { say('<b>Your turn!</b> Tap a card or pick a set below.'); sound('turn'); }
+    say(again ? '<b>Go again!</b> Tap a card.' : '<b>Tap a card.</b>', 'you');
+    if (!again) sound('turn');
     render();
+    if (kbd && (document.activeElement === document.body || document.activeElement === board)) handYou.querySelector('.gcard')?.focus({ preventScroll: true });
   }
 
   function aiPick() {
@@ -357,47 +418,55 @@
 
   async function aiTurn() {
     G.turn = 1; G.busy = true; render();
+    say('Smiley is looking at their cards…', 'them');
+    await T(1200);
     for (;;) {
       if (over()) return finish();
       if (!G.hands[1].length) {
         if (!G.deck.length) break;
-        say('Smiley is out of cards and draws from the Help Stack.');
-        await T(800);
+        say('Smiley is out of cards and draws from the Help Stack.', 'them');
+        await T(1100);
         await drawFor(1);
+        await T(600);
         await checkSets(1);
         continue;
       }
-      await T(900);
+      await T(700);
       const set = aiPick();
-      say(`Smiley looks right at you… <br><span class="say">“Help me with <em>${NAME(set)}</em>!”</span>`);
-      await T(1300);
+      say(`Smiley looks right at you… <br><span class="say">“Help me with ${chip(set)}!”</span>`, 'them');
       const got = G.hands[0].filter((c) => c.set === set);
+      // your cards of that set lift up, so you can see what's being asked for
+      got.forEach((c) => c.el.classList.add('give'));
+      await T(2000);
       if (got.length) {
-        say(`You hand over <b>${got.length}</b> <em>${NAME(set)}</em> card${got.length > 1 ? 's' : ''}. Smiley goes again.`);
+        say(`You give Smiley <b>${got.length}</b> ${chip(set)} card${got.length > 1 ? 's' : ''}. <br>Smiley goes again.`, 'them');
+        await T(700);
         await flip(() => { G.hands[0] = G.hands[0].filter((c) => c.set !== set); G.hands[1].push(...got); });
         G.memory.delete(set);
+        await T(900);
         await checkSets(1);
         continue;
       }
       if (!G.deck.length) {
-        say(`You don’t have any <em>${NAME(set)}</em>. <br>The Help Stack is empty, so it’s your turn.`);
-        await T(1300);
+        say(`You don’t have any ${chip(set)}. <br>The Help Stack is empty, so it’s your turn.`, 'them');
+        await T(1600);
         break;
       }
-      say(`You don’t have any <em>${NAME(set)}</em>. <br>Smiley goes to the Help Stack.`);
-      await T(1000);
+      say(`You don’t have any ${chip(set)}. <br>Smiley draws from the Help Stack.`, 'them');
+      await T(1500);
       const c = await drawFor(1);
+      await T(600);
       const drewAsked = !!(c && c.set === set);
       if (drewAsked) {
-        say(`Smiley drew ${AN(set)} <em>${NAME(set)}</em>, just what they asked for! Smiley goes again.`);
-        await T(1000);
+        say(`Smiley drew the ${chip(set)} card they asked for! <br>Smiley goes again.`, 'them');
+        await T(1600);
       }
       await checkSets(1);
       if (drewAsked) continue;
       break;
     }
     if (over()) return finish();
-    await T(500);
+    await T(600);
     yourTurn(false);
   }
 
@@ -454,8 +523,8 @@
     gameId++;
     G = null;
     starting = false;
-    handYou.innerHTML = ''; handThem.innerHTML = ''; setsYou.innerHTML = ''; setsThem.innerHTML = ''; askBar.innerHTML = '';
-    msg.innerHTML = '';
+    handYou.innerHTML = ''; handThem.innerHTML = ''; setsYou.innerHTML = ''; setsThem.innerHTML = ''; closeAsk();
+    msg.innerHTML = ''; msg.dataset.who = '';
     BL.playMenu();
   }
 
@@ -599,7 +668,7 @@
     if (!onlineP) {
       onlineP = new Promise((res, rej) => {
         const sc = document.createElement('script');
-        sc.src = 'js/online.js';
+        sc.src = 'js/online.js?v=7';
         sc.onload = () => (BL.online ? res(BL.online) : rej(new Error('online failed')));
         sc.onerror = () => { onlineP = null; rej(new Error('Couldn’t load online play. Check your connection.')); };
         document.body.append(sc);
@@ -660,5 +729,4 @@
     hand.addEventListener('contextmenu', (e) => { if (e.target.closest('.gcard')) e.preventDefault(); });
     hand.addEventListener('click', (e) => { if (hand._peeked) { hand._peeked = false; e.stopPropagation(); e.preventDefault(); } }, true);
   };
-  BL.peekable(handYou);
 })();
