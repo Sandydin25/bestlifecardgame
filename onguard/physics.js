@@ -66,7 +66,7 @@
     LINK: 0.3, // how much pressing one corner drags its same-end partner down
     GX: 1780, GY: 1780 * X / Y, // board units / s^2 across full x / y span
     DROP: 26, // board units a fully pressed corner sinks (for the renderer)
-    SINK: 1 / 0.81, RISE: 1 / 1.0, // linear sink / rise rates (1/s)
+    SINK: 1 / 0.3, RISE: 1 / 1.0, // linear sink / rise rates (1/s): a held lever reaches the bottom in 0.3 s (user: 0.81 s was way too slow)
     LINGER: 0.20, TAP: 0.16, // release linger and tap-hold window (s)
     BOTTOM: 0.97, // depth at which a lever counts as bottomed out (drains push meter)
     DAMP: 0.46, ROLL: 8, // rolling losses: low steel-on-plastic proportional (1/s) and smooth creep stop (units/s^2)

@@ -2022,7 +2022,7 @@
       if (loading) return loading;
       loading = new Promise((res, rej) => {
         const s = document.createElement('script');
-        s.src = 'net.js?v=6';
+        s.src = 'net.js?v=7';
         s.onload = () => (window.OGNet ? res(window.OGNet) : rej(new Error('Online play didn’t load.')));
         s.onerror = () => { loading = null; s.remove(); rej(new Error('Can’t reach the game server. Check your internet connection.')); };
         document.head.append(s);
