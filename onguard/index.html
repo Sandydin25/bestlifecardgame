@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>On Guard · the tilting marble game by Sandy Kraemer</title>
+<meta name="description" content="Play On Guard, the tilting marble game invented by Sandy Kraemer. Red vs Blue: two players on one phone, or online. Tilt the board and roll the steel marble into your color.">
+<meta name="theme-color" content="#f2f3f6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="On Guard">
+<meta property="og:title" content="On Guard · Red vs Blue">
+<meta property="og:description" content="Sandy Kraemer’s first invention, the tilting marble game, now on your phone. Tilt the board, roll the marble into your color.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://bestlifecards.com/onguard/">
+<meta property="og:image" content="https://bestlifecards.com/onguard/share.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23fff'/%3E%3Cpath d='M9 10h30l10 11-10 11H5z' fill='%23ff2a3d'/%3E%3Cpath d='M25 32h34l-4 22H25L15 43z' fill='%231f6bff'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preload" href="fonts/BarlowCondensed-900i.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="onguard.css?v=3">
+<script>try{if(sessionStorage.getItem('og-from')==='bestlife')document.documentElement.classList.add('from-bl')}catch(e){}</script>
+</head>
+<body>
+<div id="app" class="app" data-screen="title">
+  <div class="bg" aria-hidden="true">
+    <div class="bg-grid"></div>
+    <div class="bg-slab bg-slab-1"></div>
+    <div class="bg-slab bg-slab-2"></div>
+    <div class="bg-dash bg-dash-r"></div>
+    <div class="bg-dash bg-dash-b"></div>
+    <div class="bg-tag bg-tag-r">OG / 01 — Tilt game</div>
+    <div class="bg-tag bg-tag-l">Red → ← Blue</div>
+  </div>
+
+  <!-- the board (title-screen demo and the game) -->
+  <div id="stage" class="stage" aria-hidden="true">
+    <div id="table" class="table">
+      <div id="pitch" class="pitch">
+        <div id="spin" class="spin">
+          <div id="shadow" class="board-shadow"></div>
+          <div id="board" class="board">
+            <div class="side side-n"></div><div class="side side-s"></div><div class="side side-w"></div><div class="side side-e"></div>
+            <canvas id="cvBase" class="cv"></canvas>
+            <canvas id="cvLive" class="cv"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== title ===== -->
+  <section id="title" class="screen title" aria-labelledby="logoText">
+    <header class="topbar">
+      <nav class="game-switch" id="gameSwitch" aria-label="Sandy’s games">
+        <i class="gs-pill" aria-hidden="true"></i>
+        <a class="gs-tab gs-bl" href="../" aria-label="Best Life: Sandy’s card game">BEST LIFE</a>
+        <a class="gs-tab gs-og" href="./" aria-current="page" aria-label="On Guard"><b class="o1">ON</b><b class="o2">GUARD</b></a>
+      </nav>
+      <button class="icon-btn sound-btn" type="button" data-act="sound" aria-label="Sound on" aria-pressed="true"></button>
+    </header>
+    <div class="hero">
+      <p class="kicker"><span class="k-num">No.01</span><span class="k-rule"></span><span>Sandy Kraemer’s first invention</span></p>
+      <h1 class="logo" id="logoText" aria-label="On Guard">
+        <span class="lg lg-on"><span class="lg-w">ON</span></span>
+        <span class="lg lg-guard"><span class="lg-w">GUARD</span></span>
+      </h1>
+      <p class="tagline">The tilting marble game. <b>Tilt the board and roll the steel marble into your color.</b></p>
+    </div>
+    <div id="titleSlot" class="title-slot" aria-hidden="true"></div>
+    <nav class="menu" aria-label="Play">
+      <button class="mbtn mbtn-red touch-only" type="button" data-act="local">
+        <span class="mb-n"></span><span class="mb-t">Same phone</span><span class="mb-s">2 players · lay it flat between you</span>
+        <svg class="mb-a" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4 8 8-8 8" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linejoin="miter"/></svg>
+      </button>
+      <button class="mbtn mbtn-blue" type="button" data-act="online">
+        <span class="mb-n"></span><span class="mb-t">Play online</span><span class="mb-s">each on your own phone or computer</span>
+        <svg class="mb-a" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4 8 8-8 8" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linejoin="miter"/></svg>
+      </button>
+      <button class="mbtn mbtn-ink" type="button" data-act="cpu">
+        <span class="mb-n"></span><span class="mb-t">Practice</span><span class="mb-s" id="cpuSub">against the computer · gentle</span>
+        <svg class="mb-a" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4 8 8-8 8" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linejoin="miter"/></svg>
+      </button>
+      <div class="menu-foot"><button class="tlink" type="button" data-act="howto">How to play</button></div>
+    </nav>
+    <p class="credit">On Guard, a tilting game invented by Sandy Kraemer, first published by Parker Brothers.</p>
+  </section>
+
+  <!-- ===== online lobby ===== -->
+  <section id="online" class="screen online" aria-label="Play online">
+    <header class="topbar">
+      <button class="back" type="button" data-act="title">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4 7 12l8 8" fill="none" stroke="currentColor" stroke-width="2.8"/></svg>
+        <span>Back</span>
+      </button>
+      <button class="icon-btn sound-btn" type="button" data-act="sound" aria-label="Sound on" aria-pressed="true"></button>
+    </header>
+    <div id="onlinePanel" class="panel"></div>
+    <p id="ogLive" class="sr" role="status" aria-live="polite"></p>
+  </section>
+
+  <!-- ===== game ===== -->
+  <div id="zones" class="zones" aria-hidden="true"></div>
+  <div id="pads" class="pads" aria-hidden="true"></div>
+  <div id="hud" class="hud">
+    <div class="bug" id="bug" aria-label="Score">
+      <div class="bug-t r"><div class="bug-who"><span class="bug-nm"><svg class="sym" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.2 1 10.8 6 2.2 11z" fill="currentColor"/></svg><span class="bug-name" data-name="r">Red</span></span><span class="pips" data-pips="r"></span></div></div>
+      <div class="bug-n" style="--c:var(--red)"><b class="roll" data-score="r"></b></div>
+      <div class="bug-mid"><span>TO</span><b>5</b></div>
+      <div class="bug-n" style="--c:var(--blue)"><b class="roll" data-score="b"></b></div>
+      <div class="bug-t b"><div class="bug-who"><span class="bug-nm"><svg class="sym" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="3.8" fill="none" stroke="currentColor" stroke-width="2.5"/></svg><span class="bug-name" data-name="b">Blue</span></span><span class="pips" data-pips="b"></span></div></div>
+    </div>
+    <div class="badge" id="badge-r" data-p="r"><div class="badge-in"><span class="b-tag"><svg class="sym" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.2 1 10.8 6 2.2 11z" fill="currentColor"/></svg><span class="b-name" data-name="r">Red</span></span><b class="b-score roll" data-score="r"></b><span class="pips" data-pips="r"></span></div></div>
+    <div class="badge" id="badge-b" data-p="b"><div class="badge-in"><span class="b-tag"><svg class="sym" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="3.8" fill="none" stroke="currentColor" stroke-width="2.5"/></svg><span class="b-name" data-name="b">Blue</span></span><b class="b-score roll" data-score="b"></b><span class="pips" data-pips="b"></span></div></div>
+    <button class="icon-btn hud-btn" id="menuBtn" type="button" data-act="pause" aria-label="Menu">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="2.6"/></svg>
+    </button>
+    <button class="icon-btn hud-btn sound-btn" id="hudSound" type="button" data-act="sound" aria-label="Sound on" aria-pressed="true"></button>
+    <div class="code-tag" id="codeTag"></div>
+    <div class="series" id="series" aria-label="Series score"><span class="series-in"><span>Series</span><b class="r" data-series="r">0</b><i></i><b class="b" data-series="b">0</b></span></div>
+  </div>
+  <div id="count" class="count" aria-live="assertive"></div>
+  <div id="banner" class="banner-wrap" aria-live="polite"></div>
+  <div id="tips" class="tips-layer" aria-hidden="true"></div>
+  <div id="ready" class="rdy-layer" aria-live="polite"></div>
+  <div id="flash" class="flash" aria-hidden="true"></div>
+  <div id="toast" class="toast" role="status"></div>
+
+  <!-- ===== modals (one shows at a time; How to play comes last so it sits on top) ===== -->
+  <div id="pause" class="modal" role="dialog" aria-modal="true" aria-labelledby="pauseH">
+    <div class="sheet sheet-sm" tabindex="-1">
+      <p class="kicker" id="pauseK"><span class="k-num">II</span><span class="k-rule"></span><span>Timeout</span></p>
+      <h2 id="pauseH">Paused</h2>
+      <div class="stack" id="pauseBtns"></div>
+    </div>
+  </div>
+
+  <div id="diff" class="modal" role="dialog" aria-modal="true" aria-labelledby="diffH">
+    <div class="sheet sheet-sm" tabindex="-1">
+      <p class="kicker"><span class="k-num">Practice</span><span class="k-rule"></span><span>You play Red</span></p>
+      <h2 id="diffH">Pick a level</h2>
+      <div class="seg" data-seg="level" role="radiogroup" aria-label="Computer player"></div>
+      <p class="seg-note" data-level-note></p>
+      <div class="stack">
+        <button class="btn btn-red" type="button" data-act="cpu-go">Play</button>
+        <button class="btn btn-soft" type="button" data-act="close">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="drop" class="modal" role="dialog" aria-modal="true" aria-labelledby="dropH">
+    <div class="sheet sheet-sm" tabindex="-1">
+      <p class="kicker"><span class="k-num">On hold</span><span class="k-rule"></span><span id="dropK">Online</span></p>
+      <h2 id="dropH">They dropped out</h2>
+      <p class="sheet-p" id="dropP"></p>
+      <div class="stack">
+        <button class="btn btn-ink" type="button" data-act="n-wait">Keep waiting</button>
+        <button class="btn btn-blue" type="button" data-act="n-find">Find a new opponent</button>
+        <button class="btn btn-soft" type="button" data-act="leave">End game</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="win" class="modal win" role="dialog" aria-modal="true" aria-labelledby="winH">
+    <div class="win-card" tabindex="-1">
+      <p class="kicker"><span class="k-num">Final</span><span class="k-rule"></span><span id="winK">First to 5</span></p>
+      <div class="win-band"><h2 id="winH" class="win-h">RED WINS</h2></div>
+      <div class="win-line" id="winScore"></div>
+      <p class="win-series" id="winSeries"><span>Series</span><b class="r" data-series="r">0</b><i></i><b class="b" data-series="b">0</b></p>
+      <p class="win-note" id="winNote"></p>
+      <div class="win-btns" id="winBtns"></div>
+    </div>
+  </div>
+
+  <div id="howto" class="modal" role="dialog" aria-modal="true" aria-labelledby="howtoH">
+    <div class="sheet" tabindex="-1">
+      <p class="kicker"><span class="k-num">Rules</span><span class="k-rule"></span><span>First to 5</span></p>
+      <h2 id="howtoH">How to play</h2>
+      <ol class="rules">
+        <li data-n="01"><span><b>Roll the steel marble into a pocket of your color.</b> First to <b>5</b> wins.</span></li>
+        <li data-n="02"><span><b class="r"><svg class="sym" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.2 1 10.8 6 2.2 11z" fill="currentColor"/></svg>Red</b> plays from the left end and <b class="b"><svg class="sym" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="3.8" fill="none" stroke="currentColor" stroke-width="2.5"/></svg>Blue</b> from the right. Each end has one red pocket and one blue pocket, each with a peg standing guard.</span></li>
+        <li data-n="03"><span><b>Hold a lever to lift that corner.</b> The marble rolls away from it. Let go and the board settles back to level. Hold both of yours to send it straight across.</span></li>
+        <li data-n="04"><span>Both players’ levers tilt the same board, so you can push back to guard your end.</span></li>
+        <li data-n="05"><span><b>Push meter:</b> holding levers uses up your push. When it runs out, let go of both levers and it refills, so nobody can hold the board still forever.</span></li>
+        <li data-n="06"><span>After each point the marble goes back to the middle, and a 3·2·1 countdown starts the next one.</span></li>
+      </ol>
+      <h3>Controls</h3>
+      <ul class="controls">
+        <li><span>Same phone</span><span>Lay the phone flat between you. Each player presses and holds the two pads at their own end.</span></li>
+        <li><span>Online, phone</span><span>Held upright, your two pads sit side by side along the bottom. On its side, they stack on the left: top and bottom.</span></li>
+        <li><span>Computer</span><span>Hold <kbd>A</kbd> or <kbd>←</kbd> for your left lever, <kbd>D</kbd> or <kbd>→</kbd> for your right.</span></li>
+      </ul>
+      <aside class="shop" aria-labelledby="shopH">
+        <svg class="shop-art" viewBox="0 0 240 132" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M28 78 150 34 222 60 100 110Z"/>
+            <path d="M28 78v8l72 32 122-50v-8M100 110v8"/>
+            <path d="M43 78.500 149.500 40.500 207 61 100.500 102Z" opacity=".45"/>
+            <g class="pegs"><circle cx="82.600" cy="72.800" r="2.600"/><circle cx="118.600" cy="88.800" r="2.600"/><circle cx="110.400" cy="77.300" r="2.600"/><circle cx="131.400" cy="55.200" r="2.600"/><circle cx="167.400" cy="71.200" r="2.600"/><circle cx="139.600" cy="66.700" r="2.600"/><circle cx="103.400" cy="62.400" r="2.600"/><circle cx="146.600" cy="81.600" r="2.600"/></g>
+            <path d="M12 96q5 7 13 8M12 96l1.500 6.500M12 96l6 2" opacity=".55"/>
+            <path d="M232 44q-3-8-11-10M232 44l-1-6.500M232 44l-6-2" opacity=".55"/>
+            <path d="M172 121 221 104.500l5 2.200-.800 5.400-49 16.500-7.700 1.300Z"/>
+            <path d="M176.200 128.600 172 121M221 104.500l4.200 7.600"/>
+          </g>
+          <g fill="none" stroke-width="2.200" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M70.500 83 64 80.200 57 83.200" stroke="#ff2a3d"/><path d="M92.500 92.800 86 90 79 93" stroke="#1f6bff"/>
+            <path d="M158.500 51.600 165 54.400 172 51.400" stroke="#1f6bff"/><path d="M180.500 61.200 187 64 194 61" stroke="#ff2a3d"/>
+            <path d="M24 73 17.500 70M95 115l-6.500 3.500" stroke="#ff2a3d" stroke-width="4"/>
+            <path d="M154 32l6.500-3.500M226 64.500l6.500 3" stroke="#1f6bff" stroke-width="4"/>
+          </g>
+          <ellipse cx="63.500" cy="85.800" rx="4" ry="2.500" fill="currentColor"/><ellipse cx="85.500" cy="95.500" rx="4" ry="2.500" fill="currentColor"/>
+          <ellipse cx="165.500" cy="48.800" rx="4" ry="2.500" fill="currentColor"/><ellipse cx="187.500" cy="58.500" rx="4" ry="2.500" fill="currentColor"/>
+          <circle cx="128.600" cy="72" r="6" fill="#fff" stroke="currentColor" stroke-width="1.700"/>
+          <path d="M125.500 70.500q1-3 4-3.200" fill="none" stroke="currentColor" stroke-width="1.300" stroke-linecap="round"/>
+          <path d="M121 82.500q7.500 3 15 0" fill="none" stroke="currentColor" stroke-width="1.300" stroke-linecap="round" opacity=".35"/>
+        </svg>
+        <div class="shop-t">
+          <h3 id="shopH">From Sandy’s workshop</h3>
+          <p>On Guard was Sandy Kraemer’s first invention. Parker Brothers licensed and published it as a tilting game for 2 to 4 players. He went on to invent more games, including Best Life.</p>
+        </div>
+      </aside>
+      <p class="fine">This web version is for 2 players, in red and blue.</p>
+      <button class="btn btn-ink btn-wide" type="button" data-act="close">Got it</button>
+    </div>
+  </div>
+
+  <canvas id="fx" class="fx" aria-hidden="true"></canvas>
+  <div id="safe" class="safe-probe" aria-hidden="true"></div>
+</div>
+<div class="og-cover" id="ogCover" aria-hidden="true"><i class="r"><b>ON</b></i><i class="b"><b>GUARD</b></i></div>
+<noscript><p style="position:fixed;inset:auto 0 0;padding:16px;background:#fff;color:#000;text-align:center">On Guard needs JavaScript to play.</p></noscript>
+<script src="../js/config.js"></script>
+<script src="physics.js?v=3"></script>
+<script src="game.js?v=3"></script>
+</body>
+</html>

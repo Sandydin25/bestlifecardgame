@@ -39,6 +39,7 @@
     e.preventDefault();
     const fromSwitch = sw.contains(a) && sw.classList.contains('has-og');
     if (fromSwitch) { sw.classList.add('go'); placePill(swOG); }
+    if (document.fonts) document.fonts.load("italic 900 80px 'OG Barlow Condensed'").catch(() => {});
     try { sessionStorage.setItem('og-from', 'bestlife'); } catch (err) {}
     setTimeout(() => {
       const w = BL.el('div', 'og-wipe', '<i class="r"><b>ON</b></i><i class="b"><b>GUARD</b></i>');
@@ -49,6 +50,10 @@
   };
   document.addEventListener('click', goOnGuard);
   addEventListener('pageshow', (e) => { if (e.persisted) { document.querySelectorAll('.og-wipe').forEach((w) => w.remove()); sw.classList.remove('go'); settlePill(); } });
+  // warm up On Guard's display face as soon as someone points at the tab, so its wipe text never swaps font mid-slide
+  if (swOG) swOG.addEventListener('pointerenter', () => document.fonts && document.fonts.load("italic 900 80px 'OG Barlow Condensed'").catch(() => {}), { once: true });
+  // coming back from On Guard: drop the cover class once its slide-out is done
+  if (document.documentElement.classList.contains('from-og')) setTimeout(() => document.documentElement.classList.remove('from-og'), 1300);
 
   // phones: a Menu button opens a sheet with every section
   const navBtn = $('#navMenu'), sheet = $('#navSheet');

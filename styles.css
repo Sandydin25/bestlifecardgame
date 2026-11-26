@@ -978,10 +978,12 @@ html.fs-lock, html.fs-lock body { overflow: hidden; }
 }
 /* the click: red and blue arrows sweep across the screen, then On Guard opens */
 .og-wipe { position: fixed; inset: 0; z-index: 1000; pointer-events: none; overflow: hidden; }
-.og-wipe i { position: absolute; left: 0; width: 100%; height: 50.5%; display: grid; place-items: center; font: 400 clamp(64px, 16vw, 180px)/1 var(--display); color: #fff; font-style: normal; }
-.og-wipe i b { font-weight: 400; transform: skewX(-9deg); }
-.og-wipe .r { top: 0; background: #e8392b; clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%); animation: og-in-l .55s cubic-bezier(.7,0,.2,1) both; }
-.og-wipe .b { bottom: 0; background: #2a8fd8; clip-path: polygon(12% 0, 100% 0, 100% 100%, 12% 100%, 0 50%); animation: og-in-r .55s .06s cubic-bezier(.7,0,.2,1) both; }
+/* the same face On Guard's arrival cover uses, so the hand-off between the two pages is seamless */
+@font-face { font-family: 'OG Barlow Condensed'; font-style: italic; font-weight: 900; font-display: block; src: url(onguard/fonts/BarlowCondensed-900i.woff2) format('woff2'); }
+.og-wipe i { position: absolute; left: 0; width: 100%; height: 50.5%; display: grid; place-items: center; font: italic 900 clamp(76px, 19vw, 210px)/1 'OG Barlow Condensed', var(--display); color: #fff; text-transform: uppercase; letter-spacing: -.01em; }
+.og-wipe i b { font-weight: 900; }
+.og-wipe .r { top: 0; background: #ff2a3d; clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%); animation: og-in-l .55s cubic-bezier(.7,0,.2,1) both; }
+.og-wipe .b { bottom: 0; background: #1f6bff; clip-path: polygon(12% 0, 100% 0, 100% 100%, 12% 100%, 0 50%); animation: og-in-r .55s .06s cubic-bezier(.7,0,.2,1) both; }
 @keyframes og-in-l { from { transform: translateX(-105%); } }
 @keyframes og-in-r { from { transform: translateX(105%); } }
 @media (prefers-reduced-motion: reduce) { .og-badge > span { animation: none !important; } }
@@ -996,8 +998,8 @@ html.fs-lock, html.fs-lock body { overflow: hidden; }
 .has-og .gs-bl { margin-right: 0; color: var(--yellow); }
 .has-og .gs-bl[aria-current] { color: var(--ink); }
 .has-og .gs-og b { display: inline-block; font-weight: 400; transform: skewX(-9deg); transition: color .35s ease, transform .35s cubic-bezier(.3,1.6,.5,1); }
-.has-og .gs-og .o1 { color: #ff6b5c; }
-.has-og .gs-og .o2 { color: #5cb6f6; }
+.has-og .gs-og .o1 { color: #ff5a68; }
+.has-og .gs-og .o2 { color: #6f9dff; }
 .has-og .gs-pill {
   display: block; position: absolute; z-index: 0; left: 0; top: 4px; bottom: 4px; width: var(--w, 120px); border-radius: 999px;
   transform: translateX(var(--x, 4px)); background: var(--yellow); box-shadow: 0 3px 0 #c9a800, 0 8px 18px rgba(0,0,0,.25);
@@ -1005,7 +1007,7 @@ html.fs-lock, html.fs-lock body { overflow: hidden; }
 }
 .has-og .gs-pill::before { /* On Guard colours fade in as the pill arrives */
   content: ''; position: absolute; inset: 0; border-radius: inherit; opacity: 0; transition: opacity .16s .34s;
-  background: linear-gradient(100deg, #e8392b 0 40%, #2a8fd8 40.5% 100%);
+  background: linear-gradient(100deg, #ff2a3d 0 40%, #1f6bff 40.5% 100%);
 }
 @media (hover: hover) {
   .has-og:not(.go) .gs-og:hover b { transform: skewX(-9deg) translateY(-2px); }
@@ -1025,3 +1027,12 @@ html.fs-lock, html.fs-lock body { overflow: hidden; }
   .has-og .gs-pill { top: 3px; bottom: 3px; }
 }
 @media (max-width: 359px) { .has-og .gs-tab { padding: 0 8px; font-size: 15px; } }
+
+/* coming back from On Guard: its yellow + indigo wipe is still covering the screen, so slide it away (pure CSS, can't get stuck) */
+.bl-cover { display: none; }
+html.from-og .bl-cover { display: block; position: fixed; inset: 0; z-index: 1000; pointer-events: none; overflow: hidden; }
+.bl-cover i { position: absolute; inset: 0; display: grid; place-items: center; clip-path: polygon(14% 0, 100% 0, 100% 100%, 0 100%); }
+.bl-cover .y { background: var(--yellow); animation: bl-out .6s .3s cubic-bezier(.75,0,.2,1) forwards; }
+.bl-cover .n { background: var(--indigo); animation: bl-out .6s .22s cubic-bezier(.75,0,.2,1) forwards; }
+.bl-cover .n b { font: 400 clamp(60px, 15vw, 170px)/1 var(--display); color: var(--yellow); letter-spacing: .01em; transform: skewX(-9deg); }
+@keyframes bl-out { to { transform: translateX(-115%); } }

@@ -25,6 +25,14 @@ npm install
 npm run build
 ```
 
+## On Guard (`onguard/`)
+Sandy's first invention, a tilting marble game first published by Parker Brothers, rebuilt for the web.
+Same-phone two-player, online play, and practice against the computer.
+- `onguard/game.js`: drawing, input, screens, sound. `onguard/physics.js`: the board simulation and practice bot.
+- `onguard/net.js` is built from `build/src/onguard-net.js` (`cd build && npm run build:onguard`).
+- Fonts are self-hosted (Barlow, Barlow Condensed, JetBrains Mono; SIL Open Font License, files in `onguard/fonts/`).
+- The BEST LIFE | ON GUARD switch at the top of both pages links them with a sliding pill and a wipe.
+
 ## Firebase
 - Project `best-life-card-game`: Realtime Database plus anonymous sign-in.
 - `database.rules.json` is the source of truth for the security rules. Paste it into
