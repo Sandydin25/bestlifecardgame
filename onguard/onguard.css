@@ -126,7 +126,7 @@ a{color:inherit}
 .gs-pill{position:absolute;z-index:0;left:0;top:4px;bottom:4px;width:var(--w,104px);border-radius:999px;transform:translateX(var(--x,4px));
   background:var(--bl-yellow);box-shadow:0 6px 16px -6px rgba(255,42,61,.55)}
 .gs-pill::before{content:'';position:absolute;inset:0;border-radius:inherit;transition:opacity .16s .28s;
-  background:linear-gradient(104deg,var(--red) 0 41%,#fff 41% 42.2%,var(--blue) 42.2% 100%)}
+  background:linear-gradient(104deg,var(--red) 0 37.4%,#fff 37.4% 38.7%,var(--blue) 38.7% 100%)}
 .gs-pill::after{content:'';position:absolute;inset:0;border-radius:inherit;opacity:0;transition:opacity .16s .28s;
   background:#0d0e10;box-shadow:inset 0 0 0 1.5px #f2eee4}
 .game-switch.ready .gs-pill{transition:transform .56s cubic-bezier(.68,-0.32,.27,1.32),width .56s cubic-bezier(.68,-0.32,.27,1.32),box-shadow .35s}

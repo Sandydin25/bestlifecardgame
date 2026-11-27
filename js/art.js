@@ -247,22 +247,32 @@
       <path d="M47 23 C42 15 33 14 30 16 C34 23 41 25 47 23 Z" fill="#4c9e2e" stroke="#2c6a18" stroke-width="1.4"/>
       <ellipse cx="31" cy="46" rx="5" ry="10" fill="#fff" opacity=".4" transform="rotate(20 31 46)"/>`),
   };
-  const HAND = `<defs><linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd35a"/><stop offset="1" stop-color="#f2a226"/></linearGradient></defs>`;
-  const HS = 'fill="url(#hg)" stroke="#b86e12" stroke-width="2.2" stroke-linejoin="round"';
+  const HAND = `<defs>
+      <linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe066"/><stop offset=".55" stop-color="#ffc336"/><stop offset="1" stop-color="#ec9614"/></linearGradient>
+      <linearGradient id="hg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7b932"/><stop offset="1" stop-color="#df860e"/></linearGradient>
+    </defs>`;
+  const HS = 'fill="url(#hg)" stroke="#9a5508" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"';
+  const HS2 = 'fill="url(#hg2)" stroke="#9a5508" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"';
   ICONS.point = svg('0 0 100 100', HAND + `
-      <path d="M8 46 C8 40 12 38 18 38 L56 38 C58 34 62 32 70 32 L91 32 C96 32 98 36 98 40 C98 44 96 47 91 47 L66 47 L66 50 Z" ${HS}/>
-      <rect x="22" y="40" width="48" height="46" rx="15" ${HS}/>
-      <path d="M30 40 C26 30 32 22 40 26 L52 38" ${HS}/>
-      <path d="M40 56 C50 54 60 54 68 56 M38 67 C48 65 58 65 67 67 M40 78 C48 76 56 76 64 77" stroke="#b86e12" stroke-width="2" fill="none" stroke-linecap="round"/>
-      <ellipse cx="80" cy="36" rx="9" ry="2.6" fill="#fff" opacity=".45"/>`);
+      <path d="M23 39 C27 25 38 19 49 23 C56 25.5 60 32 57 37 L27 42 Z" ${HS}/>
+      <path d="M44 50 L62 50 C68 50 71 52.8 71 55.6 C71 58.6 68 61.2 62 61.2 L44 61.2 Z" ${HS2}/>
+      <path d="M42 60.8 L59 60.8 C64.8 60.8 67.5 63.4 67.5 66 C67.5 68.8 64.8 71.2 59 71.2 L42 71.2 Z" ${HS2}/>
+      <path d="M40 70.8 L55 70.8 C60.2 70.8 63 73.2 63 75.8 C63 78.5 60 81 54.5 81 L36 81 Z" ${HS2}/>
+      <path d="M11 56 C11 40 20 34 35 34 L85 34 C91.2 34 94.5 37.8 94.5 42.2 C94.5 46.8 91.2 50.6 85 50.6 L50 50.6 C45 50.6 43 54 43 58 C43 69 47 77 53 80.5 C48 81.4 42 81.5 35 81.5 C19 81.5 11 71 11 56 Z" ${HS}/>
+      <path d="M44 50.6 L53 50.6 M46 61.2 L61 61.2 M45 71.2 L58 71.2" stroke="#9a5508" stroke-width="2.1" fill="none" stroke-linecap="round"/>
+      <path d="M31 35 C37 34.5 45 35.5 51 37.5" stroke="#9a5508" stroke-width="2" fill="none" stroke-linecap="round" opacity=".75"/>
+      <ellipse cx="77" cy="38.2" rx="9" ry="2.2" fill="#fff" opacity=".5"/>
+      <ellipse cx="38" cy="25.5" rx="6.5" ry="2.2" fill="#fff" opacity=".4" transform="rotate(-12 38 25.5)"/>`);
   ICONS.thumbs = svg('0 0 100 100', HAND + `
-      <path d="M38 50 L38 18 C38 8 52 6 54 16 L56 50 Z" ${HS}/>
-      <rect x="26" y="44" width="40" height="50" rx="14" ${HS}/>
-      <rect x="52" y="44" width="28" height="13" rx="6.5" ${HS}/>
-      <rect x="52" y="57" width="28" height="13" rx="6.5" ${HS}/>
-      <rect x="52" y="70" width="27" height="12" rx="6" ${HS}/>
-      <rect x="51" y="82" width="25" height="11" rx="5.5" ${HS}/>
-      <ellipse cx="44" cy="18" rx="3" ry="7" fill="#fff" opacity=".45"/>`);
+      <path d="M51 42 L76 42 C82.2 42 85.2 45 85.2 48.2 C85.2 51.4 82.2 54.2 76 54.2 L51 54.2 Z" ${HS2}/>
+      <path d="M52 53.5 L78 53.5 C84 53.5 87 56.4 87 59.6 C87 62.8 84 65.5 78 65.5 L52 65.5 Z" ${HS2}/>
+      <path d="M51 64.8 L75 64.8 C80.8 64.8 83.8 67.5 83.8 70.6 C83.8 73.7 80.8 76.2 75 76.2 L51 76.2 Z" ${HS2}/>
+      <path d="M49 75.5 L70 75.5 C75.2 75.5 78.2 78 78.2 80.8 C78.2 83.8 75 86.2 69.5 86.2 L47 86.2 Z" ${HS2}/>
+      <path d="M16 66 C16 51 22 44 31 41 C37 35 39 27 39 18 C39 11.5 49 10.8 52 17.2 C54.5 23 53 33 50 42 L57 42 C52 44 50 51 50 64 C50 75 53 82 59 86.2 L38 86.2 C23 86.2 16 78 16 66 Z" ${HS}/>
+      <path d="M54 54.2 L74 54.2 M54 65.5 L75 65.5 M53 76.2 L71 76.2" stroke="#9a5508" stroke-width="2.1" fill="none" stroke-linecap="round"/>
+      <path d="M50 42 C46 44 43.5 48 43 52" stroke="#9a5508" stroke-width="2" fill="none" stroke-linecap="round" opacity=".7"/>
+      <ellipse cx="44" cy="21" rx="2.6" ry="6.2" fill="#fff" opacity=".48" transform="rotate(6 44 21)"/>
+      <ellipse cx="26" cy="56" rx="3.2" ry="9" fill="#fff" opacity=".32" transform="rotate(-10 26 56)"/>`);
   BL.icon = (name) => ICONS[name];
   const ICON_URI = {};
   for (const k in ICONS) ICON_URI[k] = uri(ICONS[k]);

@@ -1014,7 +1014,7 @@ html.fs-lock, html.fs-lock body { overflow: hidden; }
 }
 .has-og .gs-pill::before { /* On Guard colours fade in as the pill arrives */
   content: ''; position: absolute; inset: 0; border-radius: inherit; opacity: 0; transition: opacity .16s .28s;
-  background: linear-gradient(104deg, #ff2a3d 0 41%, #fff 41% 42.2%, #1f6bff 42.2% 100%);
+  background: linear-gradient(104deg, #ff2a3d 0 37.4%, #fff 37.4% 38.7%, #1f6bff 38.7% 100%);
 }
 .has-og .gs-pill::after { /* Stac-Tac-Toe matte carbon & bone ring fades in when switching to Stac */
   content: ''; position: absolute; inset: 0; border-radius: inherit; opacity: 0; transition: opacity .16s .28s;
@@ -1041,8 +1041,8 @@ html.fs-lock, html.fs-lock body { overflow: hidden; }
 .has-og.go-stt .gs-stt { color: #f2eee4; }
 
 /* Stac-Tac-Toe mobile sheet item & wipe transition */
-.sheet-stt { display: flex !important; align-items: center; gap: 10px; }
-.stt-badge.mini { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px; border-radius: 4px; background: #111214; border: 1px solid #f2eee4; color: #f2eee4; font: 700 12px/1 var(--cond); letter-spacing: .08em; }
+.sheet-stt { display: flex !important; align-items: center; gap: 8px; }
+.stt-badge.mini { display: inline-flex; align-items: center; justify-content: center; min-width: 84px; gap: 4px; height: 24px; padding: 0 8px; border-radius: 4px; background: #111214; border: 1px solid #f2eee4; color: #f2eee4; font: 700 12px/1 var(--cond); letter-spacing: .08em; flex: none; }
 .stt-badge.mini b { display: block; width: 6px; height: 6px; border-radius: 50%; }
 .stt-badge.mini .sy { background: #ffdc14; }
 .stt-badge.mini .so { background: #ff5a0a; }
@@ -1147,7 +1147,11 @@ html.from-og .bl-cover { display: block; position: fixed; inset: 0; z-index: 100
 .sc-n { flex: none; display: inline-flex; align-items: baseline; gap: 5px; padding: 7px 12px 6px; border-radius: 999px; background: rgba(0,0,0,.3); font: 800 11px/1 var(--body); letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.85); }
 .sc-n b { font: 400 24px/.8 var(--display); letter-spacing: 0; color: var(--yellow); }
 #board .mid { grid-template-columns: auto minmax(0, 1fr); }
-#board .msg { position: relative; justify-self: stretch; max-width: 520px; }
+#board .msg { position: relative; justify-self: center; width: 100%; max-width: 520px; }
+@media (min-width: 701px) {
+  #board .mid { grid-template-columns: minmax(100px, 1fr) minmax(0, 520px) minmax(100px, 1fr); }
+  #board .mid .pile-wrap { justify-self: start; }
+}
 .m-who { display: table; margin: 0 auto 8px; padding: 4px 9px 3px; border-radius: 999px; font: 800 11px/1 var(--body); letter-spacing: .12em; text-transform: uppercase; background: var(--yellow); color: var(--ink); }
 #board .msg[data-who="them"] { background: rgba(20, 21, 66, .55); }
 #board .msg[data-who="them"] .m-who { background: #fff; }
