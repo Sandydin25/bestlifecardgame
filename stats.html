@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="robots" content="noindex">
-  <title>Best Life Games — Live Stats</title>
+  <meta name="robots" content="noindex, nofollow">
+  <title>Best Life Games — Live Analytics</title>
   <link rel="icon" href="img/icon-180.png">
   <link rel="stylesheet" href="fonts.css">
   <style>
@@ -20,34 +20,93 @@
       --stt-y: #ffdc14;
       --ink: #f5f3ed;
       --mute: rgba(245,243,237,.68);
+      --ok: #34d399;
     }
     * { box-sizing: border-box; }
     body {
-      margin: 0; min-height: 100vh; padding: 28px 16px 48px;
+      margin: 0; min-height: 100vh; padding: 28px 16px 56px;
       background: radial-gradient(120% 80% at 50% 0%, #262968, #141634 55%, #0e101f);
       color: var(--ink); font: 500 15px/1.5 Archivo, system-ui, sans-serif;
     }
-    main { max-width: 960px; margin: 0 auto; }
+    main { max-width: 1020px; margin: 0 auto; }
     .head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 22px; }
-    h1 { margin: 0; color: var(--bl-y); font: 400 clamp(40px, 8vw, 66px)/.95 Anton, Impact, sans-serif; text-transform: uppercase; text-shadow: 3px 4px 0 rgba(0,0,0,.3); }
+    h1 { margin: 0; color: var(--bl-y); font: 400 clamp(38px, 7vw, 62px)/.95 Anton, Impact, sans-serif; text-transform: uppercase; text-shadow: 3px 4px 0 rgba(0,0,0,.3); }
     .sub { margin: 6px 0 0; color: var(--mute); font-weight: 600; font-size: 14px; }
     .refresh {
       border: 1px solid var(--line); background: rgba(255,255,255,.08); color: #fff;
-      padding: 8px 14px; border-radius: 999px; font: 700 13px/1 Archivo, sans-serif; cursor: pointer;
+      padding: 9px 15px; border-radius: 999px; font: 700 13px/1 Archivo, sans-serif; cursor: pointer;
     }
     .refresh:hover { background: rgba(255,255,255,.16); }
 
     .hero {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-bottom: 26px;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 12px; margin-bottom: 22px;
     }
     .hero-tile {
-      padding: 20px 22px; border-radius: 20px; background: var(--bl-y); color: var(--bl-in);
+      padding: 18px 20px; border-radius: 18px; background: var(--bl-y); color: var(--bl-in);
     }
-    .hero-tile.dark { background: rgba(255,255,255,.1); color: #fff; border: 1px solid var(--line); }
-    .hero-tile b { display: block; font: 400 clamp(46px, 8vw, 72px)/1 Anton, Impact, sans-serif; }
+    .hero-tile.dark { background: rgba(255,255,255,.09); color: #fff; border: 1px solid var(--line); }
+    .hero-tile b { display: block; font: 400 clamp(40px, 6.5vw, 60px)/1 Anton, Impact, sans-serif; }
     .hero-tile.dark b { color: var(--bl-y); }
-    .hero-tile span { display: block; margin-top: 6px; font: 800 14px/1.2 Archivo, sans-serif; text-transform: uppercase; letter-spacing: .04em; opacity: .88; }
+    .hero-tile span { display: block; margin-top: 6px; font: 800 12.5px/1.2 Archivo, sans-serif; text-transform: uppercase; letter-spacing: .04em; opacity: .9; }
+    .hero-tile small { display: block; margin-top: 4px; font-size: 12px; font-weight: 700; opacity: .72; }
 
+    .sec-title {
+      margin: 0 0 12px; font: 400 22px/1 Anton, Impact, sans-serif; letter-spacing: .03em; text-transform: uppercase; color: #fff;
+      display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+    }
+    .sec-title small { font: 600 12.5px/1 Archivo, sans-serif; text-transform: none; letter-spacing: 0; color: var(--mute); }
+
+    /* Marketing & Audience panel */
+    .mkt {
+      padding: 20px; border-radius: 22px; background: var(--card); border: 1px solid var(--line);
+      margin-bottom: 20px; display: grid; gap: 18px;
+    }
+    .mkt-top { display: grid; grid-template-columns: 1.45fr 1fr; gap: 16px; }
+    @media (max-width: 780px) { .mkt-top { grid-template-columns: 1fr; } }
+
+    .panel {
+      padding: 15px 16px; border-radius: 16px; background: rgba(0,0,0,.22); border: 1px solid rgba(255,255,255,.07);
+    }
+    .panel h3 {
+      margin: 0 0 10px; font: 800 12px/1 Archivo, sans-serif; text-transform: uppercase; letter-spacing: .08em; color: var(--mute);
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    .legend { display: inline-flex; gap: 10px; font-weight: 700; text-transform: none; letter-spacing: 0; font-size: 11.5px; }
+    .legend i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: 0; }
+
+    /* 14-day chart */
+    .chart {
+      display: grid; grid-template-columns: repeat(14, minmax(0, 1fr)); gap: 5px;
+      height: 132px; align-items: end; padding-top: 14px;
+    }
+    .bar-col { display: flex; flex-direction: column; align-items: center; gap: 5px; height: 100%; justify-content: flex-end; }
+    .bar-pair { width: 100%; flex: 1; display: flex; align-items: flex-end; justify-content: center; gap: 2px; min-height: 0; }
+    .bar { width: 46%; border-radius: 3px 3px 1px 1px; min-height: 2px; transition: height .25s ease; }
+    .bar.dau { background: var(--bl-y); }
+    .bar.gms { background: var(--og-b); }
+    .bar-lbl { font-size: 9.5px; font-weight: 700; color: rgba(255,255,255,.48); white-space: nowrap; }
+    @media (max-width: 560px) { .bar-lbl:nth-child(odd) { opacity: .65; } }
+
+    /* Breakdown bars */
+    .bars { display: flex; flex-direction: column; gap: 8px; }
+    .brow { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700; }
+    .btrack { height: 8px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; }
+    .bfill { height: 100%; border-radius: 999px; background: var(--bl-y); transition: width .25s ease; }
+    .bfill.og { background: linear-gradient(90deg, var(--og-r), var(--og-b)); }
+    .bfill.stt { background: linear-gradient(90deg, var(--stt-y), var(--stt-o)); }
+    .bfill.ok { background: var(--ok); }
+    .bval { font-variant-numeric: tabular-nums; color: var(--mute); font-size: 12px; white-space: nowrap; }
+
+    .mkt-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    @media (max-width: 680px) { .mkt-row { grid-template-columns: 1fr; } }
+
+    .utm-tip {
+      margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: rgba(255,227,26,.08);
+      border: 1px dashed rgba(255,227,26,.28); font-size: 11.5px; color: var(--mute); line-height: 1.4;
+    }
+    .utm-tip code { color: var(--bl-y); font-family: ui-monospace, SFMono-Regular, monospace; font-size: 11px; }
+
+    /* Game sections */
     .games { display: grid; grid-template-columns: 1fr; gap: 18px; }
     .game-sec {
       padding: 20px; border-radius: 22px; background: var(--card); border: 1px solid var(--line);
@@ -71,12 +130,31 @@
     .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
     @media (max-width: 600px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     .tile { padding: 14px 15px; border-radius: 14px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.06); }
-    .tile b { display: block; font: 400 36px/1 Anton, Impact, sans-serif; color: var(--bl-y); }
+    .tile b { display: block; font: 400 34px/1 Anton, Impact, sans-serif; color: var(--bl-y); }
     .og .tile b { color: #fff; }
     .stt .tile b { color: var(--stt-y); }
     .stt .tile.hi b { color: var(--stt-o); }
     .tile span { display: block; margin-top: 4px; color: var(--mute); font-size: 13px; font-weight: 700; }
-    .tile small { display: block; margin-top: 3px; color: rgba(255,255,255,.48); font-size: 11.5px; font-weight: 600; }
+    .tile small { display: block; margin-top: 3px; color: rgba(255,255,255,.5); font-size: 11.5px; font-weight: 600; }
+
+    /* Bot win-rate strip inside each game card */
+    .wr-box {
+      margin-top: 12px; padding: 13px 15px; border-radius: 14px;
+      background: rgba(0,0,0,.22); border: 1px solid rgba(255,255,255,.07);
+    }
+    .wr-head {
+      display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px;
+      margin-bottom: 10px; font: 800 11.5px/1 Archivo, sans-serif; text-transform: uppercase; letter-spacing: .08em; color: var(--mute);
+    }
+    .wr-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 10px; }
+    .wr-item {
+      padding: 10px 12px; border-radius: 11px; background: rgba(255,255,255,.05);
+      display: flex; flex-direction: column; gap: 5px;
+    }
+    .wr-top { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+    .wr-name { font-weight: 800; font-size: 12.5px; color: #fff; }
+    .wr-pct { font: 400 22px/1 Anton, Impact, sans-serif; color: var(--ok); white-space: nowrap; }
+    .wr-rec { font-size: 11.5px; font-weight: 600; color: rgba(255,255,255,.55); }
 
     .foot { margin-top: 24px; color: rgba(255,255,255,.55); font-size: 13px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
     .foot a { color: var(--bl-y); text-decoration: none; }
@@ -87,18 +165,61 @@
   <main>
     <div class="head">
       <div>
-        <h1>Game Stats</h1>
-        <p class="sub">Live anonymous analytics across all 3 games on bestlifecards.com. <span id="upd"></span></p>
+        <h1>Game Analytics</h1>
+        <p class="sub">Anonymous marketing &amp; gameplay stats across all 3 games on bestlifecards.com. <span id="upd"></span></p>
       </div>
       <button class="refresh" id="refreshBtn" type="button">Refresh now</button>
     </div>
 
     <div class="hero">
-      <div class="hero-tile"><b id="totPlayed">–</b><span>Total games started</span></div>
-      <div class="hero-tile dark"><b id="totVisits">–</b><span>Total visits (all 3)</span></div>
-      <div class="hero-tile dark"><b id="totFinished">–</b><span>Games finished</span></div>
-      <div class="hero-tile dark"><b id="totOnline">–</b><span>Online games played</span></div>
+      <div class="hero-tile"><b id="totUnique">–</b><span>Unique Visitors</span><small id="totUniqueSub"></small></div>
+      <div class="hero-tile dark"><b id="totReturn">–</b><span>Returning Visitors</span><small id="totReturnSub"></small></div>
+      <div class="hero-tile dark"><b id="totDau">–</b><span>Active Today (UTC)</span><small id="totDauSub"></small></div>
+      <div class="hero-tile dark"><b id="totPlayed">–</b><span>Games Started</span><small id="totPlayedSub"></small></div>
+      <div class="hero-tile dark"><b id="totOnline">–</b><span>Online Matches</span><small id="totOnlineSub"></small></div>
     </div>
+
+    <!-- Audience & Marketing -->
+    <section class="mkt">
+      <div class="sec-title">
+        <span>Audience &amp; Marketing</span>
+        <small id="mktWindowSub">Last 14 days (UTC)</small>
+      </div>
+
+      <div class="mkt-top">
+        <div class="panel">
+          <h3>
+            <span>14-Day Activity</span>
+            <span class="legend">
+              <span><i style="background:var(--bl-y)"></i>Active Users</span>
+              <span><i style="background:var(--og-b)"></i>Games Started</span>
+            </span>
+          </h3>
+          <div class="chart" id="dailyChart"></div>
+        </div>
+
+        <div class="panel">
+          <h3><span>Traffic Sources</span><span id="srcTotal" style="font-weight:700;text-transform:none;letter-spacing:0"></span></h3>
+          <div class="bars" id="srcBars"></div>
+          <div class="utm-tip">Tag promo links with <code>?utm_source=tiktok</code>, <code>instagram</code>, <code>reddit</code>, <code>youtube</code>, or <code>x</code> to track campaigns automatically.</div>
+        </div>
+      </div>
+
+      <div class="mkt-row">
+        <div class="panel">
+          <h3><span>Devices</span></h3>
+          <div class="bars" id="devBars"></div>
+        </div>
+        <div class="panel">
+          <h3><span>Unique Players by Game</span></h3>
+          <div class="bars" id="gameUniqueBars"></div>
+        </div>
+        <div class="panel">
+          <h3><span>Cross-Game Switches</span></h3>
+          <div class="bars" id="switchBars"></div>
+        </div>
+      </div>
+    </section>
 
     <div class="games">
       <!-- Best Life -->
@@ -108,12 +229,16 @@
           <a class="g-link" href="./">Open Best Life →</a>
         </div>
         <div class="grid">
-          <div class="tile"><b id="blVisits">–</b><span>Visits</span></div>
+          <div class="tile"><b id="blVisits">–</b><span>Visits</span><small id="blUniqueSub"></small></div>
           <div class="tile"><b id="blSolo">–</b><span>vs Smiley started</span><small id="blSoloSub"></small></div>
           <div class="tile"><b id="blOnline">–</b><span>Online started</span><small id="blOnlineSub"></small></div>
-          <div class="tile"><b id="blFinished">–</b><span>Games finished</span></div>
+          <div class="tile"><b id="blFinished">–</b><span>Games finished</span><small id="blCompSub"></small></div>
           <div class="tile"><b id="blRooms">–</b><span>Join codes created</span><small id="blJoinsSub"></small></div>
           <div class="tile"><b id="blExtra">–</b><span>Connecting Points drawn</span><small id="blCardsSub"></small></div>
+        </div>
+        <div class="wr-box">
+          <div class="wr-head"><span>Player Win Rate (Solo vs Smiley)</span><span id="blWrMeta"></span></div>
+          <div class="wr-grid" id="blWrGrid"></div>
         </div>
       </section>
 
@@ -124,12 +249,16 @@
           <a class="g-link" href="onguard/">Open On Guard →</a>
         </div>
         <div class="grid">
-          <div class="tile"><b id="ogVisits">–</b><span>Visits</span></div>
+          <div class="tile"><b id="ogVisits">–</b><span>Visits</span><small id="ogUniqueSub"></small></div>
           <div class="tile"><b id="ogCpu">–</b><span>Practice vs CPU</span><small id="ogCpuSub"></small></div>
           <div class="tile"><b id="ogLocal">–</b><span>Same phone 2P</span><small id="ogLocalSub"></small></div>
           <div class="tile"><b id="ogOnline">–</b><span>Online 2P started</span><small id="ogOnlineSub"></small></div>
-          <div class="tile"><b id="ogFinished">–</b><span>Matches finished</span></div>
-          <div class="tile"><b id="ogGoals">–</b><span>Total goals scored</span><small id="ogRoomsSub"></small></div>
+          <div class="tile"><b id="ogFinished">–</b><span>Matches finished</span><small id="ogCompSub"></small></div>
+          <div class="tile"><b id="ogGoals">–</b><span>Total goals scored</span><small id="ogGoalsSub"></small></div>
+        </div>
+        <div class="wr-box">
+          <div class="wr-head"><span>Player Win Rates &amp; Color Balance</span><span id="ogWrMeta"></span></div>
+          <div class="wr-grid" id="ogWrGrid"></div>
         </div>
       </section>
 
@@ -140,18 +269,22 @@
           <a class="g-link" href="stactactoe/">Open Stac-Tac-Toe →</a>
         </div>
         <div class="grid">
-          <div class="tile"><b id="sttVisits">–</b><span>Visits</span></div>
+          <div class="tile"><b id="sttVisits">–</b><span>Visits</span><small id="sttUniqueSub"></small></div>
           <div class="tile hi"><b id="sttSolo">–</b><span>Solo vs AI</span><small id="sttSoloSub"></small></div>
           <div class="tile"><b id="sttLocal">–</b><span>Same device 2P</span><small id="sttLocalSub"></small></div>
           <div class="tile hi"><b id="sttOnline">–</b><span>Online 2P started</span><small id="sttOnlineSub"></small></div>
-          <div class="tile"><b id="sttFinished">–</b><span>Matches finished</span></div>
+          <div class="tile"><b id="sttFinished">–</b><span>Matches finished</span><small id="sttCompSub"></small></div>
           <div class="tile"><b id="sttRounds">–</b><span>Rounds played</span><small id="sttStackSub"></small></div>
+        </div>
+        <div class="wr-box">
+          <div class="wr-head"><span>Player Win Rates &amp; Play-First Balance</span><span id="sttWrMeta"></span></div>
+          <div class="wr-grid" id="sttWrGrid"></div>
         </div>
       </section>
     </div>
 
     <div class="foot">
-      <span>Anonymous counters only — zero personal data or cookies.</span>
+      <span>Anonymous counters only — zero personal data or tracking cookies.</span>
       <span><a href="./">Best Life</a> · <a href="onguard/">On Guard</a> · <a href="stactactoe/">Stac-Tac-Toe</a></span>
     </div>
   </main>
@@ -159,33 +292,176 @@
   <script src="js/config.js"></script>
   <script>
     const fmt = (n) => (n || 0).toLocaleString();
+    const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) + '%' : '–');
     const set = (id, n) => { const el = document.getElementById(id); if (el) el.textContent = fmt(n); };
     const txt = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
 
+    function renderBars(elId, rows, fillClass = '') {
+      const el = document.getElementById(elId);
+      if (!el) return;
+      const total = rows.reduce((acc, r) => acc + r.val, 0);
+      const max = Math.max(1, ...rows.map((r) => r.val));
+      el.innerHTML = rows.map((r) => {
+        const w = total > 0 ? Math.round((r.val / max) * 100) : 0;
+        const share = total > 0 ? ` (${Math.round((r.val / total) * 100)}%)` : '';
+        return `<div class="brow">
+          <span>${r.label}</span>
+          <div class="btrack"><div class="bfill ${r.cls || fillClass}" style="width:${w}%"></div></div>
+          <span class="bval">${fmt(r.val)}${r.hideShare ? '' : share}</span>
+        </div>`;
+      }).join('');
+    }
+
+    function renderWinCards(elId, cards) {
+      const el = document.getElementById(elId);
+      if (!el) return;
+      el.innerHTML = cards.map((c) => {
+        const w = c.pctNum == null ? 0 : Math.max(0, Math.min(100, c.pctNum));
+        return `<div class="wr-item">
+          <div class="wr-top">
+            <span class="wr-name">${c.label}</span>
+            <span class="wr-pct" style="${c.color ? 'color:' + c.color : ''}">${c.pctText}</span>
+          </div>
+          <div class="btrack"><div class="bfill ok" style="width:${w}%;${c.bar ? 'background:' + c.bar : ''}"></div></div>
+          <div class="wr-rec">${c.rec}</div>
+        </div>`;
+      }).join('');
+    }
+
+    function lastNDaysUTC(n) {
+      const out = [];
+      const now = new Date();
+      for (let i = n - 1; i >= 0; i--) {
+        const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - i));
+        out.push(d.toISOString().slice(0, 10));
+      }
+      return out;
+    }
+
     async function load() {
       try {
-        const res = await fetch(window.BL_FIREBASE.databaseURL + '/stats.json', { cache: 'no-store' });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const s = (await res.json()) || {};
+        const base = window.BL_FIREBASE.databaseURL;
+        const [rStats, rDaily] = await Promise.all([
+          fetch(base + '/stats.json', { cache: 'no-store' }),
+          fetch(base + '/statsDaily.json', { cache: 'no-store' }).catch(() => null),
+        ]);
+        if (!rStats.ok) throw new Error('HTTP ' + rStats.status);
+        const s = (await rStats.json()) || {};
+        const daily = (rDaily && rDaily.ok ? await rDaily.json() : null) || {};
 
-        // Best Life
+        // 14-day & 7-day daily sums
+        const days14 = lastNDaysUTC(14);
+        const today = days14[days14.length - 1];
+        const td = daily[today] || {};
+        const last7 = days14.slice(-7);
+        const dau7 = last7.reduce((a, d) => a + ((daily[d] && daily[d].dau) || 0), 0);
+        const gms7 = last7.reduce((a, d) => a + ((daily[d] && daily[d].games) || 0), 0);
+
+        const maxDay = Math.max(1, ...days14.map((d) => Math.max((daily[d] && daily[d].dau) || 0, (daily[d] && daily[d].games) || 0)));
+        const chartEl = document.getElementById('dailyChart');
+        chartEl.innerHTML = days14.map((d) => {
+          const row = daily[d] || {};
+          const u = row.dau || 0, g = row.games || 0;
+          const uh = Math.round((u / maxDay) * 100);
+          const gh = Math.round((g / maxDay) * 100);
+          const lbl = d.slice(5).replace('-', '/');
+          const tip = `${d}: ${u} active (${row.newUsers || 0} new, ${row.retUsers || 0} returning) · ${g} games (BL ${row.bl || 0}, OG ${row.og || 0}, STT ${row.stt || 0})`;
+          return `<div class="bar-col" title="${tip}">
+            <div class="bar-pair">
+              <div class="bar dau" style="height:${uh}%"></div>
+              <div class="bar gms" style="height:${gh}%"></div>
+            </div>
+            <span class="bar-lbl">${lbl}</span>
+          </div>`;
+        }).join('');
+        txt('mktWindowSub', `Last 7d: ${fmt(dau7)} daily-active · ${fmt(gms7)} games started`);
+
+        // Hero totals
         const blPlayed = (s.soloGamesStarted || 0) + (s.onlineGamesStarted || 0);
         const blFin = (s.soloGamesFinished || 0) + (s.onlineGamesFinished || 0);
+        const ogPlayed = (s.og_cpuStarted || 0) + (s.og_localStarted || 0) + (s.og_onlineStarted || 0);
+        const ogFin = (s.og_cpuFinished || 0) + (s.og_localFinished || 0) + (s.og_onlineFinished || 0);
+        const sttPlayed = (s.stt_soloStarted || 0) + (s.stt_localStarted || 0) + (s.stt_onlineStarted || 0);
+        const sttFin = (s.stt_soloFinished || 0) + (s.stt_localFinished || 0) + (s.stt_onlineFinished || 0);
+        const totPlayed = blPlayed + ogPlayed + sttPlayed;
+        const totFin = blFin + ogFin + sttFin;
+        const totVisits = (s.visits || 0) + (s.og_visits || 0) + (s.stt_visits || 0);
+
+        set('totUnique', s.uniqueVisitors);
+        txt('totUniqueSub', `${fmt(totVisits)} total game visits`);
+        set('totReturn', s.returningVisitors);
+        txt('totReturnSub', `${pct(s.returningVisitors || 0, s.uniqueVisitors || 0)} return rate · ${fmt(s.returningSessions)} return days`);
+        set('totDau', td.dau);
+        txt('totDauSub', `${fmt(td.newUsers)} new · ${fmt(td.retUsers)} returning · ${fmt(td.games)} games`);
+        set('totPlayed', totPlayed);
+        txt('totPlayedSub', `${fmt(totFin)} finished (${pct(totFin, totPlayed)})`);
+        const totOnline = (s.onlineGamesStarted || 0) + (s.og_onlineStarted || 0) + (s.stt_onlineStarted || 0);
+        const totRooms = (s.onlineRooms || 0) + (s.og_onlineRooms || 0) + (s.stt_onlineRooms || 0);
+        set('totOnline', totOnline);
+        txt('totOnlineSub', `${fmt(totRooms)} rooms created`);
+
+        // Traffic sources, Devices, Per-game uniques, Cross-game switches
+        const srcRows = [
+          { label: 'Direct / Link', val: s.src_direct || 0 },
+          { label: 'Google / Search', val: s.src_google || 0 },
+          { label: 'TikTok', val: s.src_tiktok || 0 },
+          { label: 'Instagram', val: s.src_instagram || 0 },
+          { label: 'Reddit', val: s.src_reddit || 0 },
+          { label: 'X / Twitter', val: s.src_x || 0 },
+          { label: 'YouTube', val: s.src_youtube || 0 },
+          { label: 'Facebook', val: s.src_facebook || 0 },
+          { label: 'Other Sites', val: s.src_referral || 0 },
+        ].sort((a, b) => b.val - a.val);
+        const srcSum = srcRows.reduce((a, r) => a + r.val, 0);
+        txt('srcTotal', `${fmt(srcSum)} tracked sessions`);
+        renderBars('srcBars', srcRows.filter((r, i) => r.val > 0 || i < 5));
+
+        renderBars('devBars', [
+          { label: 'Mobile', val: s.dev_mobile || 0 },
+          { label: 'Desktop', val: s.dev_desktop || 0 },
+        ]);
+
+        renderBars('gameUniqueBars', [
+          { label: 'Best Life', val: s.bl_unique || 0, hideShare: true },
+          { label: 'On Guard', val: s.og_unique || 0, cls: 'og', hideShare: true },
+          { label: 'Stac-Tac-Toe', val: s.stt_unique || 0, cls: 'stt', hideShare: true },
+        ]);
+
+        renderBars('switchBars', [
+          { label: '→ Best Life', val: s.sw_toBL || 0 },
+          { label: '→ On Guard', val: s.sw_toOG || 0, cls: 'og' },
+          { label: '→ Stac-Tac-Toe', val: s.sw_toSTT || 0, cls: 'stt' },
+        ]);
+
+        // Best Life
         set('blVisits', s.visits);
+        txt('blUniqueSub', `${fmt(s.bl_unique)} unique players`);
         set('blSolo', s.soloGamesStarted);
-        txt('blSoloSub', `${fmt(s.soloGamesFinished)} finished · ${fmt(s.bl_soloWins)} wins`);
+        txt('blSoloSub', `${fmt(s.soloGamesFinished)} finished (${pct(s.soloGamesFinished || 0, s.soloGamesStarted || 0)})`);
         set('blOnline', s.onlineGamesStarted);
         txt('blOnlineSub', `${fmt(s.onlineGamesFinished)} finished`);
         set('blFinished', blFin);
+        txt('blCompSub', `${pct(blFin, blPlayed)} completion`);
         set('blRooms', s.onlineRooms);
         txt('blJoinsSub', `${fmt(s.onlineJoins)} player joins`);
         set('blExtra', s.bl_wisdomDraws);
         txt('blCardsSub', `${fmt(s.bl_cardsMade)} custom cards saved`);
 
+        const blW = s.bl_soloWins || 0, blL = s.bl_soloLosses || 0, blT = s.bl_soloTies || 0;
+        const blDec = blW + blL + blT;
+        txt('blWrMeta', blDec ? `${fmt(blDec)} recorded results` : 'Starts recording on next finished game');
+        renderWinCards('blWrGrid', [
+          {
+            label: 'vs Smiley',
+            pctText: pct(blW, blDec),
+            pctNum: blDec ? (blW / blDec) * 100 : 0,
+            rec: `${fmt(blW)}W – ${fmt(blL)}L${blT ? ' – ' + fmt(blT) + 'T' : ''}`,
+          },
+        ]);
+
         // On Guard
-        const ogPlayed = (s.og_cpuStarted || 0) + (s.og_localStarted || 0) + (s.og_onlineStarted || 0);
-        const ogFin = (s.og_cpuFinished || 0) + (s.og_localFinished || 0) + (s.og_onlineFinished || 0);
         set('ogVisits', s.og_visits);
+        txt('ogUniqueSub', `${fmt(s.og_unique)} unique players`);
         set('ogCpu', s.og_cpuStarted);
         txt('ogCpuSub', `G:${fmt(s.og_cpuGentle)} · C:${fmt(s.og_cpuClassic)} · S:${fmt(s.og_cpuSharp)}`);
         set('ogLocal', s.og_localStarted);
@@ -193,13 +469,35 @@
         set('ogOnline', s.og_onlineStarted);
         txt('ogOnlineSub', `${fmt(s.og_onlineFinished)} finished · ${fmt(s.og_onlineJoins)} joins`);
         set('ogFinished', ogFin);
+        txt('ogCompSub', `${pct(ogFin, ogPlayed)} completion`);
         set('ogGoals', s.og_goalsScored);
-        txt('ogRoomsSub', `${fmt(s.og_onlineRooms)} rooms created`);
+        txt('ogGoalsSub', `${fmt(s.og_onlineRooms)} rooms · ${ogFin ? ((s.og_goalsScored || 0) / ogFin).toFixed(1) : '–'} goals/match`);
+
+        const ogBots = [
+          ['Gentle Bot', s.og_winGentle || 0, s.og_lossGentle || 0],
+          ['Classic Bot', s.og_winClassic || 0, s.og_lossClassic || 0],
+          ['Sharp Bot', s.og_winSharp || 0, s.og_lossSharp || 0],
+        ];
+        const ogRed = s.og_redWins || 0, ogBlue = s.og_blueWins || 0, ogColTot = ogRed + ogBlue;
+        txt('ogWrMeta', ogColTot ? `${fmt(ogColTot)} matches recorded` : 'Starts recording on next finished match');
+        renderWinCards('ogWrGrid', [
+          ...ogBots.map(([label, w, l]) => {
+            const t = w + l;
+            return { label, pctText: pct(w, t), pctNum: t ? (w / t) * 100 : 0, rec: `${fmt(w)}W – ${fmt(l)}L` };
+          }),
+          {
+            label: 'Red Win %',
+            pctText: ogColTot ? `${Math.round((ogRed / ogColTot) * 100)}%` : '–',
+            pctNum: ogColTot ? (ogRed / ogColTot) * 100 : 0,
+            bar: 'linear-gradient(90deg, var(--og-r), var(--og-b))',
+            color: '#fff',
+            rec: `${fmt(ogRed)} Red – ${fmt(ogBlue)} Blue`,
+          },
+        ]);
 
         // Stac-Tac-Toe
-        const sttPlayed = (s.stt_soloStarted || 0) + (s.stt_localStarted || 0) + (s.stt_onlineStarted || 0);
-        const sttFin = (s.stt_soloFinished || 0) + (s.stt_localFinished || 0) + (s.stt_onlineFinished || 0);
         set('sttVisits', s.stt_visits);
+        txt('sttUniqueSub', `${fmt(s.stt_unique)} unique players`);
         set('sttSolo', s.stt_soloStarted);
         txt('sttSoloSub', `Ch:${fmt(s.stt_soloChill)} · Cl:${fmt(s.stt_soloClever)} · M:${fmt(s.stt_soloMaster)} · D:${fmt(s.stt_soloDraw)}`);
         set('sttLocal', s.stt_localStarted);
@@ -207,14 +505,32 @@
         set('sttOnline', s.stt_onlineStarted);
         txt('sttOnlineSub', `${fmt(s.stt_onlineFinished)} finished · ${fmt(s.stt_onlineRooms)} rooms / ${fmt(s.stt_onlineJoins)} joins`);
         set('sttFinished', sttFin);
+        txt('sttCompSub', `${pct(sttFin, sttPlayed)} completion`);
         set('sttRounds', s.stt_roundsPlayed);
-        txt('sttStackSub', `${fmt(s.stt_stackPlayReached)} reached Stack Play`);
+        txt('sttStackSub', `${fmt(s.stt_stackPlayReached)} Stack Play (${pct(s.stt_stackPlayReached || 0, s.stt_roundsPlayed || 0)}) · ${fmt(s.stt_roundDraws)} draws`);
 
-        // Totals
-        set('totPlayed', blPlayed + ogPlayed + sttPlayed);
-        set('totVisits', (s.visits || 0) + (s.og_visits || 0) + (s.stt_visits || 0));
-        set('totFinished', blFin + ogFin + sttFin);
-        set('totOnline', (s.onlineGamesStarted || 0) + (s.og_onlineStarted || 0) + (s.stt_onlineStarted || 0));
+        const sttBots = [
+          ['Chill Bot', s.stt_winChill || 0, s.stt_lossChill || 0],
+          ['Clever Bot', s.stt_winClever || 0, s.stt_lossClever || 0],
+          ['Master Bot', s.stt_winMaster || 0, s.stt_lossMaster || 0],
+          ['Draw Bot', s.stt_winDraw || 0, s.stt_lossDraw || 0],
+        ];
+        const f1 = s.stt_firstMoverWins || 0, f2 = s.stt_secondMoverWins || 0, fTot = f1 + f2;
+        txt('sttWrMeta', fTot ? `${fmt(fTot)} decisive rounds · ${pct(s.stt_roundDraws || 0, s.stt_roundsPlayed || 0)} draws` : 'Starts recording on next finished round');
+        renderWinCards('sttWrGrid', [
+          ...sttBots.map(([label, w, l]) => {
+            const t = w + l;
+            return { label, pctText: pct(w, t), pctNum: t ? (w / t) * 100 : 0, rec: `${fmt(w)}W – ${fmt(l)}L` };
+          }),
+          {
+            label: 'Play-First Edge',
+            pctText: fTot ? `${Math.round((f1 / fTot) * 100)}%` : '–',
+            pctNum: fTot ? (f1 / fTot) * 100 : 0,
+            bar: 'linear-gradient(90deg, var(--stt-o), var(--stt-y))',
+            color: 'var(--stt-y)',
+            rec: `${fmt(f1)} 1st – ${fmt(f2)} 2nd`,
+          },
+        ]);
 
         txt('upd', 'Updated ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + '.');
       } catch (e) {

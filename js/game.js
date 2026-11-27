@@ -499,12 +499,14 @@
 
   function finish() {
     BL.stats.hit('soloGamesFinished');
-    if (G.won[0].length > G.won[1].length) BL.stats.hit('bl_soloWins');
+    const a = G.won[0].length, b = G.won[1].length;
+    if (a > b) BL.stats.hit('bl_soloWins');
+    else if (a < b) BL.stats.hit('bl_soloLosses');
+    else BL.stats.hit('bl_soloTies');
     G.busy = true;
     G.done = true;
     render();
     syncBar();
-    const a = G.won[0].length, b = G.won[1].length;
     $('#endTitle').textContent = a > b ? 'You win!' : a < b ? 'Smiley wins!' : 'It’s a tie!';
     $('#endText').textContent = `You collected ${a} set${a === 1 ? '' : 's'}, Smiley collected ${b}. ${a >= b ? 'That’s living your Best Life!' : 'Ask again next time!'}`;
     // a Connecting Point from one of the sets you won (or any set)

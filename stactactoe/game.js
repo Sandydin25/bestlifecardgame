@@ -600,13 +600,19 @@
     }
     if (nextState.outcome) {
       hitStat('stt_roundsPlayed');
+      if (nextState.outcome.result === 'draw') hitStat('stt_roundDraws');
     }
     if (nextState.outcome && nextState.outcome.result === 'win') {
       scoredPlayer = nextState.outcome.winner;
+      hitStat(scoredPlayer === nextState.starter ? 'stt_firstMoverWins' : 'stt_secondMoverWins');
       match.scores[scoredPlayer] += 1;
       if (match.scores[scoredPlayer] >= E.MATCH_TARGET) {
         match.matchWinner = scoredPlayer;
-        if (mode === 'solo') hitStat('stt_soloFinished');
+        if (mode === 'solo') {
+          hitStat('stt_soloFinished');
+          const lvl = soloDiff === 'draw' ? 'Draw' : soloDiff === 'master' ? 'Master' : soloDiff === 'chill' ? 'Chill' : 'Clever';
+          hitStat((scoredPlayer === soloHuman ? 'stt_win' : 'stt_loss') + lvl);
+        }
         else if (mode === 'local') hitStat('stt_localFinished');
         else if (mode === 'online' && online.isHost) hitStat('stt_onlineFinished');
       }

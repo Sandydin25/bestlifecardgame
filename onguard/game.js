@@ -1292,9 +1292,17 @@
       if (G.t >= t) {
         if (G.mode === 'demo' && (G.score.r >= TARGET || G.score.b >= TARGET)) G.score = { r: 0, b: 0 };
         if (G.score.r >= TARGET || G.score.b >= TARGET) {
-          G.phase = 'over'; G.t = 0; events.push({ k: 'over', winner: G.score.r >= TARGET ? 'r' : 'b' });
+          const winner = G.score.r >= TARGET ? 'r' : 'b';
+          G.phase = 'over'; G.t = 0; events.push({ k: 'over', winner });
+          if (G.mode === 'local' || G.mode === 'cpu' || G.mode === 'host') {
+            hitStat(winner === 'r' ? 'og_redWins' : 'og_blueWins');
+          }
           if (G.mode === 'local') hitStat('og_localFinished');
-          else if (G.mode === 'cpu') hitStat('og_cpuFinished');
+          else if (G.mode === 'cpu') {
+            hitStat('og_cpuFinished');
+            const lvl = G.level === 'sharp' ? 'Sharp' : G.level === 'classic' ? 'Classic' : 'Gentle';
+            hitStat((winner === G.me ? 'og_win' : 'og_loss') + lvl);
+          }
           else if (G.mode === 'host') hitStat('og_onlineFinished');
         }
         else { resetMatch(true); G.firstPoint = false; if (G.mode === 'demo') G.t = COUNT_T - 0.6; }
