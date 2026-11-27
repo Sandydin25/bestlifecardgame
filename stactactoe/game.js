@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  const ASSET_V = 5;
+  const ASSET_V = 6;
   const hitStat = (k) => { if (window.BL && window.BL.stats) window.BL.stats.hit(k); };
   const E = window.STTEngine;
   const $ = (sel) => document.querySelector(sel);
@@ -19,7 +19,8 @@
   const DIFF_NOTES = {
     chill: 'Relaxed pace — great for learning Stack Play.',
     clever: 'Reads Stack Play traps and blocks threats.',
-    master: 'Exact opening play and deep Stack Play lookahead.',
+    master: 'Mathematically perfect — unbeatable and punishes every slip.',
+    draw: 'Unbeatable pacifist — never lets you win and refuses to win unless cornered.',
   };
 
   /* ==================== SYNTHESIZED TACTILE AUDIO ==================== */
@@ -409,7 +410,7 @@
     if (!boardOk) showToast('3D graphics unavailable in this browser.');
     mode = 'solo';
     online.active = false;
-    const cpuLabel = soloDiff === 'master' ? 'Master AI' : soloDiff === 'chill' ? 'Chill AI' : 'Clever AI';
+    const cpuLabel = soloDiff === 'draw' ? 'Draw AI' : soloDiff === 'master' ? 'Master AI' : soloDiff === 'chill' ? 'Chill AI' : 'Clever AI';
     match = {
       scores: { o: 0, y: 0 },
       roundNum: 1,
@@ -422,7 +423,7 @@
       seq: 0,
     };
     hitStat('stt_soloStarted');
-    hitStat(soloDiff === 'master' ? 'stt_soloMaster' : soloDiff === 'chill' ? 'stt_soloChill' : 'stt_soloClever');
+    hitStat(soloDiff === 'draw' ? 'stt_soloDraw' : soloDiff === 'master' ? 'stt_soloMaster' : soloDiff === 'chill' ? 'stt_soloChill' : 'stt_soloClever');
     closeModals();
     enterGameScreen();
   }

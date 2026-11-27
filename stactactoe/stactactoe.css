@@ -457,6 +457,8 @@ html.from-other .stt-cover{display:grid;animation:stt-out .52s 1.3s var(--inout)
 
 .seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line-2);border-radius:3px;overflow:hidden;background:var(--ground-2)}
 .seg-2{grid-template-columns:repeat(2,1fr)}
+.seg-4{grid-template-columns:repeat(4,1fr)}
+.seg-4 .seg-btn{font-size:15px;letter-spacing:.07em}
 .seg-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:42px;font:700 16px/1 var(--cond);text-transform:uppercase;letter-spacing:.1em;color:var(--mute);transition:background-color .1s linear,color .1s linear}
 .seg-btn + .seg-btn{border-left:1px solid var(--line-2)}
 @media (hover:hover){.seg-btn:not(.is-on):hover{color:var(--ink);background:var(--key)}}

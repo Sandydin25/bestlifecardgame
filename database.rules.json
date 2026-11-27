@@ -3,7 +3,7 @@
     "stats": {
       ".read": true,
       "$key": {
-        ".write": "newData.exists() && $key.matches(/^(visits|soloGamesStarted|soloGamesFinished|onlineRooms|onlineJoins|onlineGamesStarted|onlineGamesFinished|bl_soloWins|bl_wisdomDraws|bl_cardsMade|og_visits|og_localStarted|og_localFinished|og_cpuStarted|og_cpuFinished|og_cpuGentle|og_cpuClassic|og_cpuSharp|og_onlineRooms|og_onlineJoins|og_onlineStarted|og_onlineFinished|og_goalsScored|stt_visits|stt_soloStarted|stt_soloFinished|stt_soloChill|stt_soloClever|stt_soloMaster|stt_localStarted|stt_localFinished|stt_onlineRooms|stt_onlineJoins|stt_onlineStarted|stt_onlineFinished|stt_roundsPlayed|stt_stackPlayReached)$/)",
+        ".write": "newData.exists() && $key.matches(/^(visits|soloGamesStarted|soloGamesFinished|onlineRooms|onlineJoins|onlineGamesStarted|onlineGamesFinished|bl_soloWins|bl_wisdomDraws|bl_cardsMade|og_visits|og_localStarted|og_localFinished|og_cpuStarted|og_cpuFinished|og_cpuGentle|og_cpuClassic|og_cpuSharp|og_onlineRooms|og_onlineJoins|og_onlineStarted|og_onlineFinished|og_goalsScored|stt_visits|stt_soloStarted|stt_soloFinished|stt_soloChill|stt_soloClever|stt_soloMaster|stt_soloDraw|stt_localStarted|stt_localFinished|stt_onlineRooms|stt_onlineJoins|stt_onlineStarted|stt_onlineFinished|stt_roundsPlayed|stt_stackPlayReached)$/)",
         ".validate": "newData.isNumber() && newData.val() === (data.exists() ? data.val() : 0) + 1"
       }
     },

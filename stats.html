@@ -201,7 +201,7 @@
         const sttFin = (s.stt_soloFinished || 0) + (s.stt_localFinished || 0) + (s.stt_onlineFinished || 0);
         set('sttVisits', s.stt_visits);
         set('sttSolo', s.stt_soloStarted);
-        txt('sttSoloSub', `Ch:${fmt(s.stt_soloChill)} · Cl:${fmt(s.stt_soloClever)} · M:${fmt(s.stt_soloMaster)}`);
+        txt('sttSoloSub', `Ch:${fmt(s.stt_soloChill)} · Cl:${fmt(s.stt_soloClever)} · M:${fmt(s.stt_soloMaster)} · D:${fmt(s.stt_soloDraw)}`);
         set('sttLocal', s.stt_localStarted);
         txt('sttLocalSub', `${fmt(s.stt_localFinished)} finished`);
         set('sttOnline', s.stt_onlineStarted);
