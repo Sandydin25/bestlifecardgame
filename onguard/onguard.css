@@ -741,12 +741,11 @@ html.from-bl .og-cover{display:block}
 @keyframes cover-r{to{transform:translateX(112%)}}
 @keyframes cover-b{to{transform:translateX(-112%)}}
 .bl-wipe{position:fixed;inset:0;z-index:1000;pointer-events:none;overflow:hidden}
-.bl-wipe::before{content:'';position:absolute;inset:0;background:var(--bl-indigo);animation:bl-in .46s .06s var(--inout) both}
-.bl-wipe .w{top:0;height:100%}
-.bl-wipe .y{background:var(--bl-yellow);clip-path:polygon(14% 0,100% 0,100% 100%,0 100%);animation:bl-in .46s var(--inout) both}
-.bl-wipe .n{background:var(--bl-indigo);clip-path:polygon(14% 0,100% 0,100% 100%,0 100%);animation:bl-in .46s .08s var(--inout) both}
+.bl-wipe .w{inset:0 -18vw;width:auto;height:100%}
+.bl-wipe .y{background:var(--bl-yellow);clip-path:polygon(12% 0,100% 0,88% 100%,0 100%);animation:bl-in .46s var(--inout) both}
+.bl-wipe .n{background:var(--bl-indigo);clip-path:polygon(12% 0,100% 0,88% 100%,0 100%);animation:bl-in .46s .08s var(--inout) both}
 .bl-wipe .n b{font:400 clamp(60px,15vw,170px)/1 'Anton','Impact',var(--hl);color:var(--bl-yellow);letter-spacing:.01em;transform:skewX(-9deg);animation:fade-in .3s .3s both}
-@keyframes bl-in{from{transform:translateX(105%)}}
+@keyframes bl-in{from{transform:translateX(100%)}}
 
 /* ---------- the Best Life | On Guard switch stays in the same corner as on the Best Life page ----------
    Best Life's nav is fixed: the switch sits 14px down and clamp(16px, 4vw, 44px) in, 222 x 44 (175 x 38 on phones).

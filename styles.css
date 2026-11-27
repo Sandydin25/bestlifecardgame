@@ -1071,14 +1071,14 @@ html.fs-lock, html.fs-lock body { overflow: hidden; }
   .has-og .gs-stt { min-width: 52px; font-size: 12.5px; }
 }
 
-/* coming back from On Guard: its yellow + indigo wipe is still covering the screen, so slide it away (pure CSS, can't get stuck) */
+/* coming back from On Guard or Stac-Tac-Toe: full-bleed slanted yellow + indigo cover slides away cleanly */
 .bl-cover { display: none; }
 html.from-og .bl-cover { display: block; position: fixed; inset: 0; z-index: 1000; pointer-events: none; overflow: hidden; }
-.bl-cover i { position: absolute; inset: 0; display: grid; place-items: center; clip-path: polygon(14% 0, 100% 0, 100% 100%, 0 100%); }
+.bl-cover i { position: absolute; inset: 0 -18vw; display: grid; place-items: center; clip-path: polygon(12% 0, 100% 0, 88% 100%, 0 100%); }
 .bl-cover .y { background: var(--yellow); animation: bl-out .6s .3s cubic-bezier(.75,0,.2,1) forwards; }
 .bl-cover .n { background: var(--indigo); animation: bl-out .6s .22s cubic-bezier(.75,0,.2,1) forwards; }
 .bl-cover .n b { font: 400 clamp(60px, 15vw, 170px)/1 var(--display); color: var(--yellow); letter-spacing: .01em; transform: skewX(-9deg); }
-@keyframes bl-out { to { transform: translateX(-115%); } }
+@keyframes bl-out { to { transform: translateX(-100%); } }
 
 /* ================================================================== */
 /*  GAME NIGHT (families)                                             */

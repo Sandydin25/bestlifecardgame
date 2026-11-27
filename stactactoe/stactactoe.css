@@ -137,12 +137,11 @@ html.from-other .stt-cover{display:grid;animation:stt-out .52s 1.3s var(--inout)
 .sc-grid span:first-child{color:var(--orange)}
 .sc-grid span:nth-child(6),.sc-grid span:nth-child(7),.sc-grid span:nth-child(8){color:var(--yellow)}
 .bl-wipe,.og-wipe{position:fixed;inset:0;z-index:1000;pointer-events:none;overflow:hidden}
-.bl-wipe::before{content:'';position:absolute;inset:0;background:var(--bl-indigo);animation:bl-in .46s .06s var(--inout) both}
-.bl-wipe .w{position:absolute;inset:0;display:grid;place-items:center;font-style:normal}
-.bl-wipe .y{background:var(--bl-yellow);clip-path:polygon(14% 0,100% 0,100% 100%,0 100%);animation:bl-in .46s var(--inout) both}
-.bl-wipe .n{background:var(--bl-indigo);clip-path:polygon(14% 0,100% 0,100% 100%,0 100%);animation:bl-in .46s .08s var(--inout) both}
+.bl-wipe .w{position:absolute;inset:0 -18vw;display:grid;place-items:center;font-style:normal}
+.bl-wipe .y{background:var(--bl-yellow);clip-path:polygon(12% 0,100% 0,88% 100%,0 100%);animation:bl-in .46s var(--inout) both}
+.bl-wipe .n{background:var(--bl-indigo);clip-path:polygon(12% 0,100% 0,88% 100%,0 100%);animation:bl-in .46s .08s var(--inout) both}
 .bl-wipe .n b{font:400 clamp(60px,15vw,170px)/1 'Anton','Impact',var(--cond);color:var(--bl-yellow);letter-spacing:.01em;transform:skewX(-9deg)}
-@keyframes bl-in{from{transform:translateX(105%)}}
+@keyframes bl-in{from{transform:translateX(100%)}}
 .og-wipe i{position:absolute;left:0;width:100%;height:50.5%;display:grid;place-items:center;font:italic 900 clamp(76px,19vw,210px)/1 var(--cond);color:#fff;text-transform:uppercase;letter-spacing:-.01em}
 .og-wipe .r{top:0;background:var(--og-red);clip-path:polygon(0 0,88% 0,100% 50%,88% 100%,0 100%);animation:og-in-l .52s var(--inout) both}
 .og-wipe .b{bottom:0;background:var(--og-blue);clip-path:polygon(12% 0,100% 0,100% 100%,12% 100%,0 50%);animation:og-in-r .52s .06s var(--inout) both}
