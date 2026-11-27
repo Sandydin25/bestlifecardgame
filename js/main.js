@@ -25,36 +25,49 @@
   addEventListener('scroll', onScrollNav, { passive: true });
   onScrollNav();
 
-  // Best Life / On Guard switch: the pill slides over (turning red and blue), the arrows sweep the screen, On Guard opens
-  const sw = $('#gameSwitch'), swPill = sw.querySelector('.gs-pill'), swBL = sw.querySelector('.gs-bl'), swOG = sw.querySelector('.gs-og');
-  if (swOG && !swOG.hidden) sw.classList.add('has-og');
+  // Best Life / On Guard / Stac switch: the pill slides over (taking on the target game's look), sweeps the screen, and opens it
+  const sw = $('#gameSwitch'), swPill = sw.querySelector('.gs-pill'), swBL = sw.querySelector('.gs-bl'), swOG = sw.querySelector('.gs-og'), swSTT = sw.querySelector('.gs-stt');
+  if ((swOG && !swOG.hidden) || (swSTT && !swSTT.hidden)) sw.classList.add('has-og');
   const placePill = (tab) => { swPill.style.setProperty('--x', tab.offsetLeft + 'px'); swPill.style.setProperty('--w', tab.offsetWidth + 'px'); };
   const settlePill = () => { if (sw.classList.contains('has-og') && !sw.classList.contains('go')) placePill(swBL); };
   settlePill();
   document.fonts && document.fonts.ready.then(settlePill);
   addEventListener('resize', settlePill);
   let ogGoing = false, ogTimers = [];
-  const goOnGuard = (e) => {
-    const a = e.target.closest('a[href="onguard/"]');
+  const goOtherGame = (e) => {
+    const aOG = e.target.closest('a[href="onguard/"]');
+    const aSTT = e.target.closest('a[href="stactactoe/"]');
+    const a = aOG || aSTT;
     if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
-    if (ogGoing) return; // a second tap mustn't queue a second trip (it would fire again after Back)
+    if (ogGoing) return;
     ogGoing = true;
     setSheet(false);
     const fromSwitch = sw.contains(a) && sw.classList.contains('has-og');
-    if (fromSwitch) { sw.classList.add('go'); placePill(swOG); }
-    if (document.fonts) document.fonts.load("italic 900 80px 'OG Barlow Condensed'").catch(() => {});
-    try { sessionStorage.setItem('og-from', 'bestlife'); } catch (err) {}
-    ogTimers.push(setTimeout(() => {
-      const w = BL.el('div', 'og-wipe', '<i class="r"><b>ON</b></i><i class="b"><b>GUARD</b></i>');
-      w.setAttribute('aria-hidden', 'true');
-      document.body.append(w);
-      ogTimers.push(setTimeout(() => { location.href = a.href; }, 640));
-    }, fromSwitch ? 420 : 0));
+    if (aOG) {
+      if (fromSwitch) { sw.classList.add('go', 'go-og'); placePill(swOG); }
+      if (document.fonts) document.fonts.load("italic 900 80px 'OG Barlow Condensed'").catch(() => {});
+      try { sessionStorage.setItem('og-from', 'bestlife'); } catch (err) {}
+      ogTimers.push(setTimeout(() => {
+        const w = BL.el('div', 'og-wipe', '<i class="r"><b>ON</b></i><i class="b"><b>GUARD</b></i>');
+        w.setAttribute('aria-hidden', 'true');
+        document.body.append(w);
+        ogTimers.push(setTimeout(() => { location.href = a.href; }, 520));
+      }, fromSwitch ? 380 : 0));
+    } else {
+      if (fromSwitch) { sw.classList.add('go', 'go-stt'); placePill(swSTT); }
+      try { sessionStorage.setItem('stt-from', 'bestlife'); } catch (err) {}
+      ogTimers.push(setTimeout(() => {
+        const w = BL.el('div', 'stt-wipe', '<div class="sc-grid"><span>S</span><span>T</span><span>A</span><span>C</span><span></span><span>T</span><span>A</span><span>C</span><span></span><span>T</span><span>O</span><span>E</span></div>');
+        w.setAttribute('aria-hidden', 'true');
+        document.body.append(w);
+        ogTimers.push(setTimeout(() => { location.href = a.href; }, 520));
+      }, fromSwitch ? 380 : 0));
+    }
   };
-  document.addEventListener('click', goOnGuard);
+  document.addEventListener('click', goOtherGame);
   addEventListener('pagehide', () => { ogTimers.forEach(clearTimeout); ogTimers = []; });
-  addEventListener('pageshow', (e) => { if (e.persisted) { ogTimers.forEach(clearTimeout); ogTimers = []; ogGoing = false; document.querySelectorAll('.og-wipe').forEach((w) => w.remove()); sw.classList.remove('go'); settlePill(); } });
+  addEventListener('pageshow', (e) => { if (e.persisted) { ogTimers.forEach(clearTimeout); ogTimers = []; ogGoing = false; document.querySelectorAll('.og-wipe,.stt-wipe').forEach((w) => w.remove()); sw.classList.remove('go', 'go-og', 'go-stt'); settlePill(); } });
   // warm up On Guard's display face as soon as someone points at the tab, so its wipe text never swaps font mid-slide
   if (swOG) swOG.addEventListener('pointerenter', () => document.fonts && document.fonts.load("italic 900 80px 'OG Barlow Condensed'").catch(() => {}), { once: true });
   // coming back from On Guard: drop the cover class once its slide-out is done
@@ -75,7 +88,7 @@
   });
   document.addEventListener('click', (e) => { if (!sheet.hidden && !sheet.contains(e.target) && !navBtn.contains(e.target)) setSheet(false); });
   addEventListener('keydown', (e) => { if (e.key === 'Escape' && !sheet.hidden) { setSheet(false); navBtn.focus(); } });
-  addEventListener('resize', () => { if (!sheet.hidden && innerWidth > 760) setSheet(false); });
+  addEventListener('resize', () => { if (!sheet.hidden && innerWidth > 920) setSheet(false); });
 
   /* ================================================================== */
   /*  REVEAL                                                            */

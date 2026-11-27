@@ -29,9 +29,9 @@
   </script>
   <link rel="apple-touch-icon" href="img/icon-180.png">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%233b3d92'/%3E%3Ctext x='50' y='72' font-family='Impact,Arial Narrow,sans-serif' font-size='62' text-anchor='middle' fill='%23ffe31a'%3EBL%3C/text%3E%3C/svg%3E">
-  <script>try{if(sessionStorage.getItem('bl-from')==='onguard'){document.documentElement.classList.add('from-og');sessionStorage.removeItem('bl-from')}}catch(e){}</script>
+  <script>try{var _f=sessionStorage.getItem('bl-from');if(_f==='onguard'||_f==='stactactoe'){document.documentElement.classList.add('from-og');sessionStorage.removeItem('bl-from')}}catch(e){}</script>
   <link rel="stylesheet" href="fonts.css">
-  <link rel="stylesheet" href="styles.css?v=7">
+  <link rel="stylesheet" href="styles.css?v=9">
 </head>
 <body>
 
@@ -41,6 +41,7 @@
     <i class="gs-pill" aria-hidden="true"></i>
     <a class="gs-tab gs-bl nav-logo" href="#top" aria-current="page" aria-label="Best Life — back to top">BEST LIFE</a>
     <a class="gs-tab gs-og" href="onguard/" aria-label="On Guard: the tilting marble game"><b class="o1">ON</b><b class="o2">GUARD</b></a>
+    <a class="gs-tab gs-stt" href="stactactoe/" aria-label="Stac-Tac-Toe: vertical stacking game"><i class="s-dots" aria-hidden="true"><b class="sy"></b><b class="so"></b></i><span>STAC</span></a>
   </nav>
   <nav class="nav-links" aria-label="Sections">
     <a href="#sets">The Sets</a>
@@ -58,6 +59,7 @@
     <a href="#play">Play a Round</a>
     <a href="#maker" data-maker>Make your own card</a>
     <a href="onguard/" class="sheet-og"><span class="og-badge mini" aria-hidden="true"><span class="og-on"><b>ON</b></span><span class="og-guard"><b>GUARD</b></span></span> The tilting marble game</a>
+    <a href="stactactoe/" class="sheet-stt"><span class="stt-badge mini" aria-hidden="true"><b class="sy"></b><b class="so"></b><span>STAC</span></span> Vertical stacking tic-tac-toe</a>
   </nav>
 </header>
 
@@ -355,7 +357,7 @@
 <script src="js/art.js"></script>
 <script src="js/stats.js"></script>
 <script src="js/engine.js"></script>
-<script src="js/main.js?v=7"></script>
+<script src="js/main.js?v=9"></script>
 <script src="js/sound.js"></script>
 <script src="js/game.js?v=7"></script>
 <script>

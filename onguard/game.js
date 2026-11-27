@@ -2782,37 +2782,59 @@
   })();
 
   /* ================================================================
-     Best Life | On Guard switch, and the wipes between the two sites
+     Best Life | On Guard | Stac switch, and wipes between the 3 games
      ================================================================ */
   const sw = $('#gameSwitch');
-  const swPill = sw.querySelector('.gs-pill'), swBL = sw.querySelector('.gs-bl'), swOG = sw.querySelector('.gs-og');
+  const swPill = sw.querySelector('.gs-pill'), swBL = sw.querySelector('.gs-bl'), swOG = sw.querySelector('.gs-og'), swSTT = sw.querySelector('.gs-stt');
   function placePill(tab) { swPill.style.setProperty('--x', tab.offsetLeft + 'px'); swPill.style.setProperty('--w', tab.offsetWidth + 'px'); }
   function settleSwitch() {
     if (sw.classList.contains('go') || !swOG.offsetWidth) return;
     placePill(swOG);
     if (!sw.classList.contains('ready')) requestAnimationFrame(() => sw.classList.add('ready'));
   }
+  let navTimers = [];
+  if (swSTT) swSTT.addEventListener('pointerenter', () => document.fonts && document.fonts.load("400 44px 'Archivo Black'").catch(() => {}), { once: true });
   swBL.addEventListener('click', (e) => {
     if (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
     if (sw.classList.contains('go')) return;
-    sw.classList.add('ready', 'go');
+    sw.classList.add('ready', 'go', 'go-bl');
     placePill(swBL);
     Snd.play('swish');
     try { sessionStorage.setItem('bl-from', 'onguard'); sessionStorage.removeItem('og-from'); } catch (err) {}
-    setTimeout(() => {
+    navTimers.push(setTimeout(() => {
       const w = document.createElement('div');
       w.className = 'bl-wipe'; w.setAttribute('aria-hidden', 'true');
       w.innerHTML = '<i class="w y"></i><i class="w n"><b>BEST LIFE</b></i>';
       document.body.append(w);
-      setTimeout(() => { location.href = swBL.href; }, 560);
-    }, 400);
+      navTimers.push(setTimeout(() => { location.href = swBL.href; }, 520));
+    }, 380));
   });
+  if (swSTT) {
+    swSTT.addEventListener('click', (e) => {
+      if (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      if (sw.classList.contains('go')) return;
+      sw.classList.add('ready', 'go', 'go-stt');
+      placePill(swSTT);
+      Snd.play('swish');
+      try { sessionStorage.setItem('stt-from', 'onguard'); sessionStorage.removeItem('og-from'); } catch (err) {}
+      navTimers.push(setTimeout(() => {
+        const w = document.createElement('div');
+        w.className = 'stt-wipe'; w.setAttribute('aria-hidden', 'true');
+        w.innerHTML = '<div class="sc-grid"><span>S</span><span>T</span><span>A</span><span>C</span><span></span><span>T</span><span>A</span><span>C</span><span></span><span>T</span><span>O</span><span>E</span></div>';
+        document.body.append(w);
+        navTimers.push(setTimeout(() => { location.href = swSTT.href; }, 520));
+      }, 380));
+    });
+  }
   swOG.addEventListener('click', (e) => { e.preventDefault(); try { swOG.animate([{ transform: 'none' }, { transform: 'scale(1.06)' }, { transform: 'none' }], { duration: 300, easing: 'ease-out' }); } catch (err) {} });
+  window.addEventListener('pagehide', () => { navTimers.forEach(clearTimeout); navTimers = []; });
   window.addEventListener('pageshow', (e) => {
     if (!e.persisted) return;
-    $$('.bl-wipe').forEach((w) => w.remove());
-    sw.classList.remove('go');
+    navTimers.forEach(clearTimeout); navTimers = [];
+    $$('.bl-wipe,.stt-wipe').forEach((w) => w.remove());
+    sw.classList.remove('go', 'go-bl', 'go-stt');
     settleSwitch();
   });
   // arriving from Best Life: start covered by its red and blue halves, then slide them away

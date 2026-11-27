@@ -21,8 +21,8 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23fff'/%3E%3Cpath d='M9 10h30l10 11-10 11H5z' fill='%23ff2a3d'/%3E%3Cpath d='M25 32h34l-4 22H25L15 43z' fill='%231f6bff'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="preload" href="fonts/BarlowCondensed-900i.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="onguard.css?v=7">
-<script>try{if(sessionStorage.getItem('og-from')==='bestlife')document.documentElement.classList.add('from-bl')}catch(e){}</script>
+<link rel="stylesheet" href="onguard.css?v=9">
+<script>try{var _f=sessionStorage.getItem('og-from');if(_f==='bestlife'||_f==='stactactoe')document.documentElement.classList.add('from-bl')}catch(e){}</script>
 </head>
 <body>
 <div id="app" class="app" data-screen="title">
@@ -73,6 +73,7 @@
         <i class="gs-pill" aria-hidden="true"></i>
         <a class="gs-tab gs-bl" href="../" aria-label="Best Life: Sandy’s card game">BEST LIFE</a>
         <a class="gs-tab gs-og" href="./" aria-current="page" aria-label="On Guard"><b class="o1">ON</b><b class="o2">GUARD</b></a>
+        <a class="gs-tab gs-stt" href="../stactactoe/" aria-label="Stac-Tac-Toe: vertical stacking game"><i class="s-dots" aria-hidden="true"><b class="sy"></b><b class="so"></b></i><span>STAC</span></a>
       </nav>
       <button class="icon-btn sound-btn" type="button" data-act="sound" aria-label="Sound on" aria-pressed="true"></button>
     </header>
@@ -248,6 +249,6 @@
 <script src="../js/config.js"></script>
 <script src="physics.js?v=7"></script>
 <script src="board3d.js?v=7"></script>
-<script src="game.js?v=7"></script>
+<script src="game.js?v=9"></script>
 </body>
 </html>
