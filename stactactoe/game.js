@@ -601,6 +601,12 @@
     if (nextState.outcome) {
       hitStat('stt_roundsPlayed');
       if (nextState.outcome.result === 'draw') hitStat('stt_roundDraws');
+      // every solo round counts toward the per-bot record, even if the match is never finished
+      if (mode === 'solo') {
+        const lvl = soloDiff === 'draw' ? 'Draw' : soloDiff === 'master' ? 'Master' : soloDiff === 'chill' ? 'Chill' : 'Clever';
+        const r = nextState.outcome.result;
+        hitStat((r === 'draw' ? 'stt_rDraw' : nextState.outcome.winner === soloHuman ? 'stt_rWin' : 'stt_rLoss') + lvl);
+      }
     }
     if (nextState.outcome && nextState.outcome.result === 'win') {
       scoredPlayer = nextState.outcome.winner;

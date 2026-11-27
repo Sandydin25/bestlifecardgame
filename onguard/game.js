@@ -1285,6 +1285,8 @@
         G.drop = { x: G.s.x, y: G.s.y, pocket: res, t: 0 };
         events.push({ k: 'goal', pocket: res, color: col });
         if (G.mode !== 'demo') hitStat('og_goalsScored');
+        // every goal counts toward the per-bot record, even if the match is never finished
+        if (G.mode === 'cpu') hitStat((col === G.me ? 'og_gFor' : 'og_gAgainst') + (G.level === 'sharp' ? 'Sharp' : G.level === 'classic' ? 'Classic' : 'Gentle'));
       }
     } else if (G.phase === 'goal') {
       G.mask = 0; P.step(G.s, 0, dt);

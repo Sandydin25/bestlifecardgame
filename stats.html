@@ -323,7 +323,8 @@
             <span class="wr-pct" style="${c.color ? 'color:' + c.color : ''}">${c.pctText}</span>
           </div>
           <div class="btrack"><div class="bfill ok" style="width:${w}%;${c.bar ? 'background:' + c.bar : ''}"></div></div>
-          <div class="wr-rec">${c.rec}</div>
+          <div class="wr-rec">${c.rec}</div>${c.rec2 ? `
+          <div class="wr-rec">${c.rec2}</div>` : ''}
         </div>`;
       }).join('');
     }
@@ -469,21 +470,28 @@
         set('ogOnline', s.og_onlineStarted);
         txt('ogOnlineSub', `${fmt(s.og_onlineFinished)} finished · ${fmt(s.og_onlineJoins)} joins`);
         set('ogFinished', ogFin);
-        txt('ogCompSub', `${pct(ogFin, ogPlayed)} completion`);
+        txt('ogCompSub', `first to 5 goals · ${pct(ogFin, ogPlayed)} of started`);
         set('ogGoals', s.og_goalsScored);
         txt('ogGoalsSub', `${fmt(s.og_onlineRooms)} rooms · ${ogFin ? ((s.og_goalsScored || 0) / ogFin).toFixed(1) : '–'} goals/match`);
 
         const ogBots = [
-          ['Gentle Bot', s.og_winGentle || 0, s.og_lossGentle || 0],
-          ['Classic Bot', s.og_winClassic || 0, s.og_lossClassic || 0],
-          ['Sharp Bot', s.og_winSharp || 0, s.og_lossSharp || 0],
+          ['Gentle Bot', s.og_winGentle || 0, s.og_lossGentle || 0, s.og_gForGentle || 0, s.og_gAgainstGentle || 0],
+          ['Classic Bot', s.og_winClassic || 0, s.og_lossClassic || 0, s.og_gForClassic || 0, s.og_gAgainstClassic || 0],
+          ['Sharp Bot', s.og_winSharp || 0, s.og_lossSharp || 0, s.og_gForSharp || 0, s.og_gAgainstSharp || 0],
         ];
+        const ogGoalTot = ogBots.reduce((a, b) => a + b[3] + b[4], 0);
         const ogRed = s.og_redWins || 0, ogBlue = s.og_blueWins || 0, ogColTot = ogRed + ogBlue;
-        txt('ogWrMeta', ogColTot ? `${fmt(ogColTot)} matches recorded` : 'Starts recording on next finished match');
+        txt('ogWrMeta', ogGoalTot || ogColTot ? `Every goal counts · ${fmt(ogGoalTot)} goals vs bots · ${fmt(ogColTot)} matches finished` : 'Starts recording on the next goal');
         renderWinCards('ogWrGrid', [
-          ...ogBots.map(([label, w, l]) => {
-            const t = w + l;
-            return { label, pctText: pct(w, t), pctNum: t ? (w / t) * 100 : 0, rec: `${fmt(w)}W – ${fmt(l)}L` };
+          ...ogBots.map(([label, w, l, gf, ga]) => {
+            const t = gf + ga;
+            return {
+              label,
+              pctText: pct(gf, t),
+              pctNum: t ? (gf / t) * 100 : 0,
+              rec: `Goals ${fmt(gf)} you – ${fmt(ga)} bot`,
+              rec2: `Matches ${fmt(w)}W – ${fmt(l)}L`,
+            };
           }),
           {
             label: 'Red Win %',
@@ -505,22 +513,27 @@
         set('sttOnline', s.stt_onlineStarted);
         txt('sttOnlineSub', `${fmt(s.stt_onlineFinished)} finished · ${fmt(s.stt_onlineRooms)} rooms / ${fmt(s.stt_onlineJoins)} joins`);
         set('sttFinished', sttFin);
-        txt('sttCompSub', `${pct(sttFin, sttPlayed)} completion`);
+        txt('sttCompSub', `first to 3 rounds · ${pct(sttFin, sttPlayed)} of started`);
         set('sttRounds', s.stt_roundsPlayed);
         txt('sttStackSub', `${fmt(s.stt_stackPlayReached)} Stack Play (${pct(s.stt_stackPlayReached || 0, s.stt_roundsPlayed || 0)}) · ${fmt(s.stt_roundDraws)} draws`);
 
-        const sttBots = [
-          ['Chill Bot', s.stt_winChill || 0, s.stt_lossChill || 0],
-          ['Clever Bot', s.stt_winClever || 0, s.stt_lossClever || 0],
-          ['Master Bot', s.stt_winMaster || 0, s.stt_lossMaster || 0],
-          ['Draw Bot', s.stt_winDraw || 0, s.stt_lossDraw || 0],
-        ];
+        const sttBots = ['Chill', 'Clever', 'Master', 'Draw'].map((b) => [
+          `${b} Bot`, s['stt_win' + b] || 0, s['stt_loss' + b] || 0,
+          s['stt_rWin' + b] || 0, s['stt_rLoss' + b] || 0, s['stt_rDraw' + b] || 0,
+        ]);
+        const sttBotRounds = sttBots.reduce((a, b) => a + b[3] + b[4] + b[5], 0);
         const f1 = s.stt_firstMoverWins || 0, f2 = s.stt_secondMoverWins || 0, fTot = f1 + f2;
-        txt('sttWrMeta', fTot ? `${fmt(fTot)} decisive rounds · ${pct(s.stt_roundDraws || 0, s.stt_roundsPlayed || 0)} draws` : 'Starts recording on next finished round');
+        txt('sttWrMeta', fTot || sttBotRounds ? `Every round counts · ${fmt(sttBotRounds)} rounds vs bots · ${pct(s.stt_roundDraws || 0, s.stt_roundsPlayed || 0)} draws` : 'Starts recording on next finished round');
         renderWinCards('sttWrGrid', [
-          ...sttBots.map(([label, w, l]) => {
-            const t = w + l;
-            return { label, pctText: pct(w, t), pctNum: t ? (w / t) * 100 : 0, rec: `${fmt(w)}W – ${fmt(l)}L` };
+          ...sttBots.map(([label, w, l, rw, rl, rd]) => {
+            const t = rw + rl + rd;
+            return {
+              label,
+              pctText: pct(rw, t),
+              pctNum: t ? (rw / t) * 100 : 0,
+              rec: `Rounds ${fmt(rw)}W – ${fmt(rl)}L – ${fmt(rd)}D`,
+              rec2: `Matches ${fmt(w)}W – ${fmt(l)}L`,
+            };
           }),
           {
             label: 'Play-First Edge',
