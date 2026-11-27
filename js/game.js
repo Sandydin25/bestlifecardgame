@@ -499,6 +499,7 @@
 
   function finish() {
     BL.stats.hit('soloGamesFinished');
+    if (G.won[0].length > G.won[1].length) BL.stats.hit('bl_soloWins');
     G.busy = true;
     G.done = true;
     render();

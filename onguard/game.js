@@ -1235,12 +1235,22 @@
     Snd.play('tap');
     paintReady();
   }
+  const hitStat = (k) => { if (window.BL && window.BL.stats) window.BL.stats.hit(k); };
+  const trackOgStart = (m) => {
+    if (m === 'local') hitStat('og_localStarted');
+    else if (m === 'cpu') {
+      hitStat('og_cpuStarted');
+      hitStat(G.level === 'sharp' ? 'og_cpuSharp' : G.level === 'classic' ? 'og_cpuClassic' : 'og_cpuGentle');
+    }
+  };
+
   /** a new match from 0-0 (restart, rematch) */
   function freshMatch() {
     closeAllModals();
     G.paused = false;
     resetMatch(false);
     clearOverlays();
+    trackOgStart(G.mode);
     if (G.mode === 'local') awaitReady();
   }
 
@@ -1274,13 +1284,19 @@
         G.phase = 'goal'; G.t = 0;
         G.drop = { x: G.s.x, y: G.s.y, pocket: res, t: 0 };
         events.push({ k: 'goal', pocket: res, color: col });
+        if (G.mode !== 'demo') hitStat('og_goalsScored');
       }
     } else if (G.phase === 'goal') {
       G.mask = 0; P.step(G.s, 0, dt);
       const t = G.mode === 'demo' ? 1.2 : GOAL_T;
       if (G.t >= t) {
         if (G.mode === 'demo' && (G.score.r >= TARGET || G.score.b >= TARGET)) G.score = { r: 0, b: 0 };
-        if (G.score.r >= TARGET || G.score.b >= TARGET) { G.phase = 'over'; G.t = 0; events.push({ k: 'over', winner: G.score.r >= TARGET ? 'r' : 'b' }); }
+        if (G.score.r >= TARGET || G.score.b >= TARGET) {
+          G.phase = 'over'; G.t = 0; events.push({ k: 'over', winner: G.score.r >= TARGET ? 'r' : 'b' });
+          if (G.mode === 'local') hitStat('og_localFinished');
+          else if (G.mode === 'cpu') hitStat('og_cpuFinished');
+          else if (G.mode === 'host') hitStat('og_onlineFinished');
+        }
         else { resetMatch(true); G.firstPoint = false; if (G.mode === 'demo') G.t = COUNT_T - 0.6; }
       }
     } else {
@@ -1636,6 +1652,7 @@
      Main loop
      ================================================================ */
   let lastT = performance.now(), acc = 0, frames = [];
+  let prevSimX = 0, prevSimY = 0, hasPrevSim = false;
   const rollPts = new Float32Array(84); // per-substep (x, y) pairs for exact rolling across bounces/coves
   let rollN = 0;
   function frame(now) {
@@ -1650,6 +1667,8 @@
       acc += dt;
       let n = 0;
       while (acc >= P.K.DT && n < 40) {
+        if (G.phase === 'play' && G.s.live) { prevSimX = G.s.x; prevSimY = G.s.y; hasPrevSim = true; }
+        else hasPrevSim = false;
         if (G.mode === 'demo') { G.hands.r = G.bots.r.update(G.s, P.K.DT, G.grip.tired.r); G.hands.b = G.bots.b.update(G.s, P.K.DT, G.grip.tired.b); }
         else if (G.mode === 'local') { G.hands.r = P.handsOf('r', heldMask); G.hands.b = P.handsOf('b', heldMask); }
         else if (G.mode === 'cpu') { G.hands[G.me] = P.handsOf(G.me, heldMask); G.hands[OTHER[G.me]] = G.phase === 'play' ? G.bots[OTHER[G.me]].update(G.s, P.K.DT, G.grip.tired[OTHER[G.me]]) : 0; }
@@ -1659,7 +1678,7 @@
         acc -= P.K.DT; n++;
       }
       if (n >= 40) acc = 0;
-    } else acc = 0;
+    } else { acc = 0; hasPrevSim = false; }
     if (G.mode === 'guest') Net.guestFrame(now, dt);
     // countdown
     if (G.mode !== 'demo' && screen === 'game') {
@@ -1700,7 +1719,11 @@
       const p = P.POCKETS[G.drop.pocket], q = clamp(G.drop.t / 0.32, 0, 1), e = q * q;
       if (q < 1) ball = { x: lerp(G.drop.x, p.hx, Math.sqrt(q)), y: lerp(G.drop.y, p.hy, Math.sqrt(q)), scale: 1 - 0.45 * e, dark: 0.6 * e };
     } else if (G.phase === 'play' || G.phase === 'count' || G.phase === 'ready') {
-      ball = { x: G.s.x, y: G.s.y, scale: 1, dark: 0, vx: G.phase === 'play' ? G.s.vx : 0, vy: G.phase === 'play' ? G.s.vy : 0 };
+      const canInterp = G.phase === 'play' && G.s.live && hasPrevSim && !G.paused && !G.hold && G.mode !== 'guest' && Math.hypot(G.s.x - prevSimX, G.s.y - prevSimY) < 40;
+      const a = canInterp ? clamp(acc / P.K.DT, 0, 1) : 1;
+      const bx = canInterp ? lerp(prevSimX, G.s.x, a) : G.s.x;
+      const by = canInterp ? lerp(prevSimY, G.s.y, a) : G.s.y;
+      ball = { x: bx, y: by, scale: 1, dark: 0, vx: G.phase === 'play' ? G.s.vx : 0, vy: G.phase === 'play' ? G.s.vy : 0 };
       if (G.phase === 'count' && G.mode !== 'demo') { // appears with a little bounce at the start of each point
         const q = clamp(G.t / 0.45, 0, 1);
         ball.scale = q < 1 ? 0.4 + 0.6 * (1 - Math.pow(1 - q, 3)) + Math.sin(q * Math.PI) * 0.15 : 1;
@@ -1820,6 +1843,7 @@
     else if (mode === 'local') G.names = { r: 'Red', b: 'Blue' };
     setScreen('game');
     resetMatch(false);
+    trackOgStart(mode);
     G.t = -0.6; // a beat for the board to glide in
     if (mode === 'local') awaitReady();
     clearOverlays();
@@ -2022,7 +2046,7 @@
       if (loading) return loading;
       loading = new Promise((res, rej) => {
         const s = document.createElement('script');
-        s.src = 'net.js?v=7';
+        s.src = 'net.js?v=8';
         s.onload = () => (window.OGNet ? res(window.OGNet) : rej(new Error('Online play didn’t load.')));
         s.onerror = () => { loading = null; s.remove(); rej(new Error('Can’t reach the game server. Check your internet connection.')); };
         document.head.append(s);
@@ -2418,6 +2442,7 @@
       } else {
         G.game = int(R0.meta && R0.meta.games, 0, 1e6, 0) + 1;
         R0.rm = 0; R0.rd = 0;
+        hitStat('og_onlineStarted');
         awaitReady();
       }
       paintSeries();
@@ -2746,6 +2771,7 @@
       if (R0.isHost && mine && theirs) {
         // both in: the next game of the series, straight to the countdown
         G.game++;
+        hitStat('og_onlineStarted');
         closeAllModals();
         resetMatch(false);
         OGNet.setMeta({ games: G.game });

@@ -263,6 +263,7 @@
     $('#wisSrc').textContent = `Connecting Point from the ${s.name[0] + s.name.slice(1).toLowerCase()} set`;
     const total = SAYINGS.length;
     $('#wisCount').textContent = `${((drawnCount - 1) % total) + 1} of ${total} sayings drawn${drawnCount > total ? ' (reshuffled)' : ''}`;
+    BL.stats && BL.stats.hit('bl_wisdomDraws');
     requestAnimationFrame(() => requestAnimationFrame(() => quoteEl.classList.add('on')));
     $('#wisBtn').textContent = 'Draw another';
     await sleep(700);
@@ -626,6 +627,7 @@
       if (!ready) note.textContent = 'Making your picture…';
       let file;
       try { file = ready || (await makePic()); } catch (e) { note.textContent = 'Sorry, that didn’t work. Please try again.'; return; }
+      BL.stats && BL.stats.hit('bl_cardsMade');
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try { await navigator.share({ files: [file], title: 'My Best Life card' }); note.textContent = ''; return; }
         catch (e) { if (e && e.name === 'AbortError') { note.textContent = ''; return; } }

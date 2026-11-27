@@ -28,7 +28,7 @@
   sym(264, 132);
   sym(0, 132);
   sym(132, 0); // either side of the starting spot
-  sym(305, 38); // the guards, directly in front of each pocket's hole (photo blob centre 309, base about 4 units further in)
+  sym(282, 38); // the guards, in front of each pocket's hole with clean entry clearance around the mouth
 
   // Pockets: U shapes inset from each end wall (leaving a channel behind them), opening toward the middle.
   // Left end: Red on top, Blue below. Right end: Blue on top, Red below.
@@ -66,19 +66,19 @@
     LINK: 0.3, // how much pressing one corner drags its same-end partner down
     GX: 1780, GY: 1780 * X / Y, // board units / s^2 across full x / y span
     DROP: 26, // board units a fully pressed corner sinks (for the renderer)
-    SINK: 1 / 0.3, RISE: 1 / 1.0, // linear sink / rise rates (1/s): a held lever reaches the bottom in 0.3 s (user: 0.81 s was way too slow)
-    LINGER: 0.20, TAP: 0.16, // release linger and tap-hold window (s)
+    SINK: 1 / 0.25, RISE: 1 / 0.14, // linear sink / rise rates (1/s): drops in 0.25 s, springs back up fast in 0.14 s
+    LINGER: 0.04, TAP: 0.14, // brief release linger for rapid tap-hold without sluggishness (s)
     BOTTOM: 0.97, // depth at which a lever counts as bottomed out (drains push meter)
-    DAMP: 0.46, ROLL: 8, // rolling losses: low steel-on-plastic proportional (1/s) and smooth creep stop (units/s^2)
-    E_PEG: 0.68, E_WALL: 0.62, E_EDGE: 0.30, // bounciness: lively hard plastic pegs/walls, low vertical-lip thud on cove
-    TANG_LOSS: 0.08, // max tangential impact scrub fraction (scales by cos(theta), so glancing hits lose less)
+    DAMP: 0.78, ROLL: 28, // grounded steel-on-plastic rolling resistance (no endless air-hockey glide)
+    E_PEG: 0.56, E_WALL: 0.50, E_EDGE: 0.46, // crisp controlled plastic bounces (no pinball ricochet or cove cliff)
+    TANG_LOSS: 0.06, // light tangential scrub on direct hits so glancing deflections flow smoothly
     V_REST: 18, V_BOUNCE: 55, // resting-contact cutoff and smooth ramp to full restitution (prevents micro-bounce jitter)
-    G_COVE: 22000, // effective gravity for rolling steel ball on cove (~GX / 0.08 tilt slope, units/s^2)
-    COVE_DAMP: 2.4, // light extra rolling damping while riding the curved cove (1/s)
+    G_COVE: 14500, // smooth curved-fillet gravity so the marble rides and banks up the cove cleanly
+    COVE_DAMP: 1.4, COVE_DAMP_N: 14.0, // light tangential glide along the cove, smooth ~0.56 normal rebound across all speeds
     COVE_LIMIT: 0.92, // fraction of cove run where the wall becomes nearly vertical (hard clamp + thud)
-    VMAX: 1000, DT: 1 / 240,
-    LIP: 29, PULL: 2100, // a marble near the middle of a hole dips toward it (covers full pocket back shelf up to d=28.3, stays inside mouth)
-    CATCH: 8, CATCH_FAST: 380, CATCH_SLOW: 15, SLOW: 280,
+    VMAX: 880, DT: 1 / 240,
+    LIP: 28.5, RIM: 18.5, PULL: 2350, // realistic bevel pull over the hole rim + gentle pocket-shelf settle
+    CATCH: 10.5, CATCH_FAST: 460, CATCH_SLOW: 15.5, SLOW: 300,
   };
 
   function create() {
@@ -197,6 +197,18 @@
     }
     s.vx += ax * dt;
     s.vy += ay * dt;
+  }
+
+  /** Anisotropic cove damping: absorbs normal wall-bounce smoothly while letting tangential banking glide cleanly. */
+  function _coveDamp(s, cv, dt) {
+    const nx = cv.nx, ny = cv.ny;
+    const vn = s.vx * nx + s.vy * ny;
+    const vt = -s.vx * ny + s.vy * nx;
+    const dn = Math.exp(-K.COVE_DAMP_N * dt);
+    const dtang = Math.exp(-K.COVE_DAMP * dt);
+    const vn2 = vn * dn, vt2 = vt * dtang;
+    s.vx = vn2 * nx - vt2 * ny;
+    s.vy = vn2 * ny + vt2 * nx;
   }
 
   /** The other corner at the same player's end. */
@@ -324,13 +336,19 @@
     s.vx += sl.ax * dt;
     s.vy += sl.ay * dt;
 
-    // holes: near the middle of a hole the marble dips toward its center
+    // holes: realistic bevel pull once tipping over the hole rim, plus gentle dish settle on the pocket floor
     for (const p of POCKETS) {
       const dx = p.hx - s.x, dy = p.hy - s.y, d = Math.hypot(dx, dy);
-      if (d < K.LIP && d > 1e-6) {
-        const f = K.PULL * (1 - d / K.LIP + 0.25);
+      if (d < K.RIM && d > 1e-6) {
+        const u = 1 - d / K.RIM;
+        const f = K.PULL * (0.35 + 0.65 * u);
         s.vx += (dx / d) * f * dt; s.vy += (dy / d) * f * dt;
-        const damp = Math.exp(-2.2 * dt); s.vx *= damp; s.vy *= damp;
+        const hd = Math.exp(-2.8 * dt); s.vx *= hd; s.vy *= hd;
+      } else if (d < K.LIP && d > 1e-6) {
+        const u = 1 - (d - K.RIM) / (K.LIP - K.RIM);
+        const f = 380 * u;
+        s.vx += (dx / d) * f * dt; s.vy += (dy / d) * f * dt;
+        const hd = Math.exp(-0.9 * dt); s.vx *= hd; s.vy *= hd;
       }
     }
 
@@ -359,7 +377,6 @@
     } else {
       const nSub = Math.max(4, Math.ceil(dt * 960));
       const sdt = dt / nSub;
-      const cdamp = K.COVE_DAMP > 0 ? Math.exp(-K.COVE_DAMP * sdt) : 1;
       for (let sub = 0; sub < nSub; sub++) {
         cove(s.x, s.y, _cv);
         const q0 = _cv.q;
@@ -376,10 +393,7 @@
               s.x += s.vx * rem;
               s.y += s.vy * rem;
             }
-            if (K.COVE_DAMP > 0) {
-              const cdHit = Math.exp(-K.COVE_DAMP * tHit);
-              s.vx *= cdHit; s.vy *= cdHit;
-            }
+            _coveDamp(s, _cv, tHit);
             collide(s, out);
             cove(s.x, s.y, _cv);
             if (_cv.q > 0) {
@@ -416,7 +430,7 @@
             _cv.q = qMax;
           }
           _coveKick(s, _cv, 0.5 * sdt);
-          if (cdamp !== 1) { s.vx *= cdamp; s.vy *= cdamp; }
+          _coveDamp(s, _cv, sdt);
         } else {
           s._cove = 0;
         }
@@ -879,7 +893,7 @@
         let scored = -1, hitStep = steps, minOppDist = 1e9;
         for (let i = 0; i < steps; i++) {
           const p0 = _sc.press[cOwn], p1 = _sc.press[cOpp];
-          const tapBit = (i & 2) ? 1 : 0; // 2 steps (~42ms) on / 2 steps off holds depth flat
+          const tapBit = (i & 1) ? 1 : 0; // 1 step (~21ms) on / 1 step off holds depth cleanly inside 40ms linger
           let mask = 0;
           if (w0 > 0.03) {
             if (w0 >= 0.975 || p0 < w0 - 0.025) mask |= mOwn;
@@ -957,7 +971,7 @@
       delay: 0.30, pred: 0.30, every: 0.14, idle: 0.21, look: 0.21, accPred: 0.17, rollout: 0,
       backOff: -35, defendX: -330, noGuard: true, gentleFunnel: 0.76, brake: 0.82, slip: 0.26, tug: 0.34,
       partialCap: 0.89, finishBottom: true, defBottom: true, midBottom: true,
-      tol: 0.12, depthErr: 0.14, tapOn: 0.08, tapOff: 0.12, meterSave: 0,
+      tol: 0.12, depthErr: 0.14, tapOn: 0.04, tapOff: 0.032, meterSave: 0,
       hold: [0.46, 0.74], rest: [1.18, 1.56], rescueWall: 0.60, rescueProg: 1.15,
     },
     // Title-screen attract loop: lively, decisive, both colours score
@@ -965,7 +979,7 @@
       delay: 0.04, pred: 1.0, every: 0.08, idle: 0.01, look: 0.24, accPred: 0.40, rollout: 0.56,
       defendX: -315, finish: true,
       partialCap: 0.88, finishBottom: true, defBottom: true, midBottom: true,
-      tol: 0.04, depthErr: 0.03, tapOn: 0.06, tapOff: 0.12, meterSave: 0,
+      tol: 0.04, depthErr: 0.03, tapOn: 0.035, tapOff: 0.030, meterSave: 0,
       hold: [0.56, 0.88], rest: [1.18, 1.56], rescueWall: 0.58, rescueProg: 1.20,
     },
     // Classic practice opponent: plays like a real person (delay >= 0.15s with prediction, imprecise depth, occasional slips)
@@ -973,7 +987,7 @@
       delay: 0.16, pred: 1.0, every: 0.084, idle: 0.022, look: 0.24, accPred: 0.39, rollout: 0.52,
       defendX: -315, slip: 0.025, finish: true,
       partialCap: 0.89, finishBottom: true, defBottom: true, midBottom: true,
-      tol: 0.036, depthErr: 0.030, tapOn: 0.058, tapOff: 0.115, meterSave: 0,
+      tol: 0.036, depthErr: 0.030, tapOn: 0.035, tapOff: 0.030, meterSave: 0,
       hold: [0.60, 0.90], rest: [1.12, 1.48], rescueWall: 0.60, rescueProg: 1.20,
     },
     // Quick, crisp opponent: strong partial-depth finesse, decisive finishes, respects meter
@@ -981,7 +995,7 @@
       delay: 0.03, pred: 1.0, every: 0.072, idle: 0, look: 0.25, accPred: 0.42, rollout: 0.62,
       defendX: -305, finish: true, save: true,
       partialCap: 0.90, finishBottom: true, defBottom: true, midBottom: true,
-      tol: 0.022, depthErr: 0.012, tapOn: 0.055, tapOff: 0.12, meterSave: 0.14,
+      tol: 0.022, depthErr: 0.012, tapOn: 0.032, tapOff: 0.028, meterSave: 0.14,
       hold: [0.64, 0.96], rest: [1.16, 1.54], rescueWall: 0.55, rescueProg: 1.15,
     },
   };
@@ -997,8 +1011,8 @@
     const topClear = Math.abs(g.guardOwn.y) + BALL + PEG;
     const backZone = BACK - 10;
     const tol = o.tol == null ? 0.06 : o.tol;
-    const tapOn = o.tapOn == null ? 0.06 : o.tapOn;
-    const tapOff = o.tapOff == null ? 0.12 : o.tapOff;
+    const tapOn = o.tapOn == null ? 0.035 : o.tapOn;
+    const tapOff = o.tapOff == null ? 0.030 : o.tapOff;
     const depthErr = o.depthErr == null ? 0.04 : o.depthErr;
     const meterSave = o.meterSave == null ? 0 : o.meterSave;
     const predFrac = o.pred == null ? 1.0 : o.pred;

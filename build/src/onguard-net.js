@@ -11,7 +11,7 @@ import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { getDatabase, ref, get, set, update, remove, onValue, onDisconnect } from 'firebase/database';
 
 const CODE_ABC = 'ABCDEFGHJKMNPQRSTUVWXYZ'; // no I, L, O (easy to misread)
-const V = 7; // protocol / mechanics version: old and new clients must never pair
+const V = 8; // protocol / mechanics version: old and new clients must never pair
 let app = null, auth = null, db = null, uid = null, signing = null;
 let room = null, takenRoom = null;
 let skew = 0; // server clock minus this device's clock (ms), so two devices can compare timestamps
@@ -71,6 +71,7 @@ async function create(name, tok) {
     }));
   } catch (e) { if (!e || !e.cancelled) drop(); throw e; }
   if (gone(tok)) { drop(); throw stopped(); }
+  if (window.BL && window.BL.stats) window.BL.stats.hit('og_onlineRooms');
   return enter(code, true, hs);
 }
 
@@ -134,6 +135,7 @@ async function join(code, name, tok) {
     await remove(mineRef).catch(() => {});
     throw why ? new Error(why) : stopped();
   }
+  if (!mine && window.BL && window.BL.stats) window.BL.stats.hit('og_onlineJoins');
   return enter(code, false, null);
 }
 

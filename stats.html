@@ -4,62 +4,224 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
-  <title>Best Life — Game Stats</title>
+  <title>Best Life Games — Live Stats</title>
   <link rel="icon" href="img/icon-180.png">
   <link rel="stylesheet" href="fonts.css">
   <style>
-    :root { --yellow: #ffe31a; --ink: #1d1c4d; }
+    :root {
+      --bg: #111326;
+      --card: rgba(255,255,255,.06);
+      --line: rgba(255,255,255,.12);
+      --bl-y: #ffe31a;
+      --bl-in: #1d1c4d;
+      --og-r: #ff3b4c;
+      --og-b: #347cff;
+      --stt-o: #ff5a0a;
+      --stt-y: #ffdc14;
+      --ink: #f5f3ed;
+      --mute: rgba(245,243,237,.68);
+    }
     * { box-sizing: border-box; }
-    body { margin: 0; min-height: 100vh; padding: 28px 16px 40px; background: radial-gradient(120% 90% at 50% 0%, #4a4ca6, #26277a 55%, #191a55); color: #fff; font: 500 16px/1.5 Archivo, system-ui, sans-serif; }
-    main { max-width: 760px; margin: 0 auto; }
-    h1 { margin: 0; color: var(--yellow); font: 400 clamp(44px, 10vw, 76px)/.95 Anton, Impact, sans-serif; text-transform: uppercase; text-shadow: 3px 4px 0 rgba(0,0,0,.3); }
-    .sub { margin: 8px 0 26px; color: rgba(255,255,255,.75); font-weight: 600; }
-    .big { display: flex; align-items: center; gap: 18px; margin-bottom: 14px; padding: 22px; border-radius: 22px; background: var(--yellow); color: var(--ink); }
-    .big b { font: 400 clamp(64px, 16vw, 110px)/1 Anton, Impact, sans-serif; }
-    .big span { font: 800 18px/1.2 Archivo, sans-serif; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
-    .tile { padding: 16px; border-radius: 16px; background: rgba(255,255,255,.1); }
-    .tile b { display: block; color: var(--yellow); font: 400 44px/1 Anton, Impact, sans-serif; }
-    .tile span { color: rgba(255,255,255,.85); font-size: 14px; font-weight: 700; }
-    .foot { margin-top: 22px; color: rgba(255,255,255,.6); font-size: 13px; }
-    a { color: var(--yellow); }
+    body {
+      margin: 0; min-height: 100vh; padding: 28px 16px 48px;
+      background: radial-gradient(120% 80% at 50% 0%, #262968, #141634 55%, #0e101f);
+      color: var(--ink); font: 500 15px/1.5 Archivo, system-ui, sans-serif;
+    }
+    main { max-width: 960px; margin: 0 auto; }
+    .head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 22px; }
+    h1 { margin: 0; color: var(--bl-y); font: 400 clamp(40px, 8vw, 66px)/.95 Anton, Impact, sans-serif; text-transform: uppercase; text-shadow: 3px 4px 0 rgba(0,0,0,.3); }
+    .sub { margin: 6px 0 0; color: var(--mute); font-weight: 600; font-size: 14px; }
+    .refresh {
+      border: 1px solid var(--line); background: rgba(255,255,255,.08); color: #fff;
+      padding: 8px 14px; border-radius: 999px; font: 700 13px/1 Archivo, sans-serif; cursor: pointer;
+    }
+    .refresh:hover { background: rgba(255,255,255,.16); }
+
+    .hero {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-bottom: 26px;
+    }
+    .hero-tile {
+      padding: 20px 22px; border-radius: 20px; background: var(--bl-y); color: var(--bl-in);
+    }
+    .hero-tile.dark { background: rgba(255,255,255,.1); color: #fff; border: 1px solid var(--line); }
+    .hero-tile b { display: block; font: 400 clamp(46px, 8vw, 72px)/1 Anton, Impact, sans-serif; }
+    .hero-tile.dark b { color: var(--bl-y); }
+    .hero-tile span { display: block; margin-top: 6px; font: 800 14px/1.2 Archivo, sans-serif; text-transform: uppercase; letter-spacing: .04em; opacity: .88; }
+
+    .games { display: grid; grid-template-columns: 1fr; gap: 18px; }
+    .game-sec {
+      padding: 20px; border-radius: 22px; background: var(--card); border: 1px solid var(--line);
+    }
+    .game-sec.bl { border-top: 4px solid var(--bl-y); }
+    .game-sec.og { border-top: 4px solid var(--og-r); background: linear-gradient(180deg, rgba(255,42,61,.06), rgba(31,107,255,.05) 60%, var(--card)); }
+    .game-sec.stt { border-top: 4px solid var(--stt-o); background: rgba(18,19,22,.78); }
+
+    .g-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
+    .g-head h2 { margin: 0; font: 400 32px/1 Anton, Impact, sans-serif; letter-spacing: .02em; text-transform: uppercase; }
+    .bl h2 { color: var(--bl-y); }
+    .og h2 .r { color: var(--og-r); }
+    .og h2 .b { color: var(--og-b); }
+    .stt h2 { color: #f2eee4; }
+    .stt h2 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: 2px; }
+    .stt h2 .dy { background: var(--stt-y); }
+    .stt h2 .do { background: var(--stt-o); margin-right: 8px; }
+    .g-link { color: var(--mute); font: 700 13px/1 Archivo, sans-serif; text-decoration: none; }
+    .g-link:hover { color: #fff; text-decoration: underline; }
+
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    @media (max-width: 600px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    .tile { padding: 14px 15px; border-radius: 14px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.06); }
+    .tile b { display: block; font: 400 36px/1 Anton, Impact, sans-serif; color: var(--bl-y); }
+    .og .tile b { color: #fff; }
+    .stt .tile b { color: var(--stt-y); }
+    .stt .tile.hi b { color: var(--stt-o); }
+    .tile span { display: block; margin-top: 4px; color: var(--mute); font-size: 13px; font-weight: 700; }
+    .tile small { display: block; margin-top: 3px; color: rgba(255,255,255,.48); font-size: 11.5px; font-weight: 600; }
+
+    .foot { margin-top: 24px; color: rgba(255,255,255,.55); font-size: 13px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
+    .foot a { color: var(--bl-y); text-decoration: none; }
+    .foot a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
   <main>
-    <h1>Game stats</h1>
-    <p class="sub">Live counts for bestlifecards.com. Updates on its own. <span id="upd"></span></p>
-    <div class="big"><b id="played">–</b><span>games played<br>on the website</span></div>
-    <div class="grid">
-      <div class="tile"><b id="visits">–</b><span>visits</span></div>
-      <div class="tile"><b id="solo">–</b><span>games vs Smiley</span></div>
-      <div class="tile"><b id="online">–</b><span>family games online</span></div>
-      <div class="tile"><b id="finished">–</b><span>games played to the end</span></div>
-      <div class="tile"><b id="rooms">–</b><span>join codes created</span></div>
-      <div class="tile"><b id="joins">–</b><span>players who joined with a code</span></div>
+    <div class="head">
+      <div>
+        <h1>Game Stats</h1>
+        <p class="sub">Live anonymous analytics across all 3 games on bestlifecards.com. <span id="upd"></span></p>
+      </div>
+      <button class="refresh" id="refreshBtn" type="button">Refresh now</button>
     </div>
-    <p class="foot">Anonymous counts only: no names or personal info are stored. <a href="./">Back to the game</a></p>
+
+    <div class="hero">
+      <div class="hero-tile"><b id="totPlayed">–</b><span>Total games started</span></div>
+      <div class="hero-tile dark"><b id="totVisits">–</b><span>Total visits (all 3)</span></div>
+      <div class="hero-tile dark"><b id="totFinished">–</b><span>Games finished</span></div>
+      <div class="hero-tile dark"><b id="totOnline">–</b><span>Online games played</span></div>
+    </div>
+
+    <div class="games">
+      <!-- Best Life -->
+      <section class="game-sec bl">
+        <div class="g-head">
+          <h2>Best Life</h2>
+          <a class="g-link" href="./">Open Best Life →</a>
+        </div>
+        <div class="grid">
+          <div class="tile"><b id="blVisits">–</b><span>Visits</span></div>
+          <div class="tile"><b id="blSolo">–</b><span>vs Smiley started</span><small id="blSoloSub"></small></div>
+          <div class="tile"><b id="blOnline">–</b><span>Online started</span><small id="blOnlineSub"></small></div>
+          <div class="tile"><b id="blFinished">–</b><span>Games finished</span></div>
+          <div class="tile"><b id="blRooms">–</b><span>Join codes created</span><small id="blJoinsSub"></small></div>
+          <div class="tile"><b id="blExtra">–</b><span>Connecting Points drawn</span><small id="blCardsSub"></small></div>
+        </div>
+      </section>
+
+      <!-- On Guard -->
+      <section class="game-sec og">
+        <div class="g-head">
+          <h2><span class="r">On</span> <span class="b">Guard</span></h2>
+          <a class="g-link" href="onguard/">Open On Guard →</a>
+        </div>
+        <div class="grid">
+          <div class="tile"><b id="ogVisits">–</b><span>Visits</span></div>
+          <div class="tile"><b id="ogCpu">–</b><span>Practice vs CPU</span><small id="ogCpuSub"></small></div>
+          <div class="tile"><b id="ogLocal">–</b><span>Same phone 2P</span><small id="ogLocalSub"></small></div>
+          <div class="tile"><b id="ogOnline">–</b><span>Online 2P started</span><small id="ogOnlineSub"></small></div>
+          <div class="tile"><b id="ogFinished">–</b><span>Matches finished</span></div>
+          <div class="tile"><b id="ogGoals">–</b><span>Total goals scored</span><small id="ogRoomsSub"></small></div>
+        </div>
+      </section>
+
+      <!-- Stac-Tac-Toe -->
+      <section class="game-sec stt">
+        <div class="g-head">
+          <h2><span class="dot dy"></span><span class="dot do"></span>Stac-Tac-Toe</h2>
+          <a class="g-link" href="stactactoe/">Open Stac-Tac-Toe →</a>
+        </div>
+        <div class="grid">
+          <div class="tile"><b id="sttVisits">–</b><span>Visits</span></div>
+          <div class="tile hi"><b id="sttSolo">–</b><span>Solo vs AI</span><small id="sttSoloSub"></small></div>
+          <div class="tile"><b id="sttLocal">–</b><span>Same device 2P</span><small id="sttLocalSub"></small></div>
+          <div class="tile hi"><b id="sttOnline">–</b><span>Online 2P started</span><small id="sttOnlineSub"></small></div>
+          <div class="tile"><b id="sttFinished">–</b><span>Matches finished</span></div>
+          <div class="tile"><b id="sttRounds">–</b><span>Rounds played</span><small id="sttStackSub"></small></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="foot">
+      <span>Anonymous counters only — zero personal data or cookies.</span>
+      <span><a href="./">Best Life</a> · <a href="onguard/">On Guard</a> · <a href="stactactoe/">Stac-Tac-Toe</a></span>
+    </div>
   </main>
+
   <script src="js/config.js"></script>
   <script>
-    const set = (id, n) => (document.getElementById(id).textContent = (n || 0).toLocaleString());
+    const fmt = (n) => (n || 0).toLocaleString();
+    const set = (id, n) => { const el = document.getElementById(id); if (el) el.textContent = fmt(n); };
+    const txt = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
+
     async function load() {
       try {
         const res = await fetch(window.BL_FIREBASE.databaseURL + '/stats.json', { cache: 'no-store' });
-        if (!res.ok) throw new Error('HTTP ' + res.status); // keep the last numbers on screen instead of showing zeros
+        if (!res.ok) throw new Error('HTTP ' + res.status);
         const s = (await res.json()) || {};
-        set('played', (s.soloGamesStarted || 0) + (s.onlineGamesStarted || 0));
-        set('visits', s.visits);
-        set('solo', s.soloGamesStarted);
-        set('online', s.onlineGamesStarted);
-        set('finished', (s.soloGamesFinished || 0) + (s.onlineGamesFinished || 0));
-        set('rooms', s.onlineRooms);
-        set('joins', s.onlineJoins);
-        document.getElementById('upd').textContent = 'Last checked ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + '.';
+
+        // Best Life
+        const blPlayed = (s.soloGamesStarted || 0) + (s.onlineGamesStarted || 0);
+        const blFin = (s.soloGamesFinished || 0) + (s.onlineGamesFinished || 0);
+        set('blVisits', s.visits);
+        set('blSolo', s.soloGamesStarted);
+        txt('blSoloSub', `${fmt(s.soloGamesFinished)} finished · ${fmt(s.bl_soloWins)} wins`);
+        set('blOnline', s.onlineGamesStarted);
+        txt('blOnlineSub', `${fmt(s.onlineGamesFinished)} finished`);
+        set('blFinished', blFin);
+        set('blRooms', s.onlineRooms);
+        txt('blJoinsSub', `${fmt(s.onlineJoins)} player joins`);
+        set('blExtra', s.bl_wisdomDraws);
+        txt('blCardsSub', `${fmt(s.bl_cardsMade)} custom cards saved`);
+
+        // On Guard
+        const ogPlayed = (s.og_cpuStarted || 0) + (s.og_localStarted || 0) + (s.og_onlineStarted || 0);
+        const ogFin = (s.og_cpuFinished || 0) + (s.og_localFinished || 0) + (s.og_onlineFinished || 0);
+        set('ogVisits', s.og_visits);
+        set('ogCpu', s.og_cpuStarted);
+        txt('ogCpuSub', `G:${fmt(s.og_cpuGentle)} · C:${fmt(s.og_cpuClassic)} · S:${fmt(s.og_cpuSharp)}`);
+        set('ogLocal', s.og_localStarted);
+        txt('ogLocalSub', `${fmt(s.og_localFinished)} finished`);
+        set('ogOnline', s.og_onlineStarted);
+        txt('ogOnlineSub', `${fmt(s.og_onlineFinished)} finished · ${fmt(s.og_onlineJoins)} joins`);
+        set('ogFinished', ogFin);
+        set('ogGoals', s.og_goalsScored);
+        txt('ogRoomsSub', `${fmt(s.og_onlineRooms)} rooms created`);
+
+        // Stac-Tac-Toe
+        const sttPlayed = (s.stt_soloStarted || 0) + (s.stt_localStarted || 0) + (s.stt_onlineStarted || 0);
+        const sttFin = (s.stt_soloFinished || 0) + (s.stt_localFinished || 0) + (s.stt_onlineFinished || 0);
+        set('sttVisits', s.stt_visits);
+        set('sttSolo', s.stt_soloStarted);
+        txt('sttSoloSub', `Ch:${fmt(s.stt_soloChill)} · Cl:${fmt(s.stt_soloClever)} · M:${fmt(s.stt_soloMaster)}`);
+        set('sttLocal', s.stt_localStarted);
+        txt('sttLocalSub', `${fmt(s.stt_localFinished)} finished`);
+        set('sttOnline', s.stt_onlineStarted);
+        txt('sttOnlineSub', `${fmt(s.stt_onlineFinished)} finished · ${fmt(s.stt_onlineRooms)} rooms / ${fmt(s.stt_onlineJoins)} joins`);
+        set('sttFinished', sttFin);
+        set('sttRounds', s.stt_roundsPlayed);
+        txt('sttStackSub', `${fmt(s.stt_stackPlayReached)} reached Stack Play`);
+
+        // Totals
+        set('totPlayed', blPlayed + ogPlayed + sttPlayed);
+        set('totVisits', (s.visits || 0) + (s.og_visits || 0) + (s.stt_visits || 0));
+        set('totFinished', blFin + ogFin + sttFin);
+        set('totOnline', (s.onlineGamesStarted || 0) + (s.og_onlineStarted || 0) + (s.stt_onlineStarted || 0));
+
+        txt('upd', 'Updated ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + '.');
       } catch (e) {
-        document.getElementById('upd').textContent = 'Couldn’t refresh the counts just now. Trying again in 30 seconds.';
+        txt('upd', 'Couldn’t refresh counts just now — retrying in 30s.');
       }
     }
+    document.getElementById('refreshBtn').addEventListener('click', load);
     load();
     setInterval(load, 30000);
   </script>

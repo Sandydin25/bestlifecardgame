@@ -9,7 +9,8 @@
 (function () {
   'use strict';
 
-  const ASSET_V = 4;
+  const ASSET_V = 5;
+  const hitStat = (k) => { if (window.BL && window.BL.stats) window.BL.stats.hit(k); };
   const E = window.STTEngine;
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
@@ -400,6 +401,7 @@
       matchWinner: null,
       seq: 0,
     };
+    hitStat('stt_localStarted');
     enterGameScreen();
   }
 
@@ -419,6 +421,8 @@
       matchWinner: null,
       seq: 0,
     };
+    hitStat('stt_soloStarted');
+    hitStat(soloDiff === 'master' ? 'stt_soloMaster' : soloDiff === 'chill' ? 'stt_soloChill' : 'stt_soloClever');
     closeModals();
     enterGameScreen();
   }
@@ -478,6 +482,7 @@
         match.matchWinner = null;
         match.state = E.createRound('o');
         match.seq += 1;
+        hitStat('stt_onlineStarted');
         closeModals();
         setRoundBanner(false);
         board.clearOutcome();
@@ -589,11 +594,20 @@
     match.seq += 1;
 
     let scoredPlayer = null;
+    if (prevPhase === 'place' && nextState.phase === 'stack') {
+      hitStat('stt_stackPlayReached');
+    }
+    if (nextState.outcome) {
+      hitStat('stt_roundsPlayed');
+    }
     if (nextState.outcome && nextState.outcome.result === 'win') {
       scoredPlayer = nextState.outcome.winner;
       match.scores[scoredPlayer] += 1;
       if (match.scores[scoredPlayer] >= E.MATCH_TARGET) {
         match.matchWinner = scoredPlayer;
+        if (mode === 'solo') hitStat('stt_soloFinished');
+        else if (mode === 'local') hitStat('stt_localFinished');
+        else if (mode === 'online' && online.isHost) hitStat('stt_onlineFinished');
       }
     }
 
@@ -1173,6 +1187,7 @@
       matchWinner: null,
       seq: 1,
     };
+    hitStat('stt_onlineStarted');
     enterGameScreen();
     publishOnlineState(null);
   }

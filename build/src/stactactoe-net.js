@@ -235,6 +235,7 @@ async function create(name, tok) {
     throw e;
   }
   if (gone(tok)) { await rollback(); throw stopped(); }
+  if (window.BL && window.BL.stats) window.BL.stats.hit('stt_onlineRooms');
   return enter(code, true, hs);
 }
 
@@ -309,6 +310,7 @@ async function join(rawCode, name, tok) {
     throw err ? new Error(err) : stopped();
   }
 
+  if (!mine && window.BL && window.BL.stats) window.BL.stats.hit('stt_onlineJoins');
   return enter(code, false, null);
 }
 
